@@ -9,9 +9,9 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
 		this.renderer = renderer;
         this.motion = motion;
         this.motion.setController(this);
+        this.saveFlag = 0;
 
         // ide settings
-        this._saveFlag = storage.getObjData("ideSettings", "_saveFlag", 0);
         this._autoRun = storage.getObjData("ideSettings", "_autoRun", false);
         this._run3D = storage.getObjData("ideSettings", "_run3d", true);
         this._run2D = storage.getObjData("ideSettings", "_run2D", true);
@@ -75,15 +75,6 @@ CWS.Controller.prototype =
         set autoRun(val)
         {
             this.storage.setObjData("ideSettings", "_autoRun", val);
-            this._autoRun = val;
-        },
-        get saveFlag()
-        {
-            return this._saveFlag;
-        },
-        set saveFlag(val)
-        {
-            this.storage.setObjData("ideSettings", "_saveFlag", val);
             this._autoRun = val;
         },
         get run2D()
@@ -287,24 +278,30 @@ CWS.Controller.prototype.createDatGUI = function ()
         if (document.getElementById("gui"))
             document.getElementById("gui").remove();
 
+        var _this = this;
+        function sett(key, defVlu)
+        {
+            return _this.storage.getObjData("ideSettings", key, defVlu);
+        }
+
         var material3D = new THREE.MeshStandardMaterial(
         {
-            color: 0xff4400,
+            color:  sett("color", 0xff4400),
             shading: THREE.SmoothShading,
-            emissive: 0xff4400,
+            emissive: sett("emissive", 0xff4400),
             blending:0,
             alphaTest:0,
             transparent:false,
             wireframe:false,
             refractionRatio:0.98,
         });
-		material3D.metalness=0.0;
-        material3D.roughness=0.0;
+		material3D.metalness=sett("metalness", 0.0);
+        material3D.roughness=sett("roughness", 0.0);
         material3D.opacity=1;
-        material3D.visible=true;
+        material3D.visible=sett("visible", true);
         material3D.side = THREE.DoubleSide;
 
-        function handleColorChange ( color )
+        function handleColorChange ( color, settKey )
         {
             return function ( value )
             {
@@ -312,6 +309,8 @@ CWS.Controller.prototype.createDatGUI = function ()
                 {
                     value = value.replace('#', '0x');
                 }
+                _this.storage.setObjData(
+                    "ideSettings", settKey, parseInt( value ) );
                 color.setHex( value );
             };
         };
@@ -330,8 +329,10 @@ CWS.Controller.prototype.createDatGUI = function ()
         folder.add( material3D, 'metalness', 0, 1 );
         folder.add( material3D, 'roughness', 0, 1 );
         folder.add( material3D, 'visible' );
-        folder.addColor( data, 'color' ).onChange( handleColorChange( material3D.color ) );
-        folder.addColor( data, 'emissive' ).onChange( handleColorChange( material3D.emissive ) );
+        folder.addColor( data, 'color' ).onChange(
+            handleColorChange( material3D.color, "color" ) );
+        folder.addColor( data, 'emissive' ).onChange(
+            handleColorChange( material3D.emissive, "emissive" ) );
         folder.add( material3D, 'wireframe' );
         //        folder.add( material3D, 'refractionRatio', 0, 1 );
 
