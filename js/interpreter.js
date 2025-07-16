@@ -222,8 +222,8 @@ CWS.Interpreter.prototype._rot  = function (cmd, ctype)
 		if (h_x2_div_d < 0)
 			throw new CWS.ErrorParser(cmd.line.lineNumber,"Wrong radius",cmd.line.rawLine);
 		h_x2_div_d = Math.sqrt(h_x2_div_d)/Math.sqrt(d2)*this.invertRadius;
-		// // Invert the sign of h_x2_div_d if the circle is counter clockwise (see sketch below)
-		// if (gc_block.modal.motion == MOTION_MODE_CCW_ARC) { h_x2_div_d = -h_x2_div_d; }
+		// Invert the sign of h_x2_div_d if the circle is counter clockwise (see sketch below)
+		if (ctype === 3) { h_x2_div_d = -h_x2_div_d; }
 		if (cmd.param.r < 0)
 		{
             h_x2_div_d = -h_x2_div_d;
