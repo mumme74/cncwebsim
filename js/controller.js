@@ -39,9 +39,6 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
         this.editor.subscribeToCodeChanged(function (code,ev)
         {
             controller.save();
-        });
-        this.editor.subscribeToCodeChanged(function (code,ev)
-        {
             controller.runInterpreter();
         });
 
@@ -383,7 +380,12 @@ CWS.Controller.prototype.save = function(forceSave)
         {
             $("#saveIcon").css('color', 'green');
             this.saveFlag=0;
-            this.storage.code = this.editor.getCode();
+            // wait 3s before autosave, let us breathe a little...
+            clearTimeout(CWS.Controller._savetimer);
+            var _this = this;
+            CWS.Controller._savetimer = setTimeout(function(){
+                _this.storage.code = _this.editor.getCode();
+            }, forceSave ? 3000 : 0);
         }
     };
 
@@ -391,11 +393,16 @@ CWS.Controller.prototype.runInterpreter = function(forceRun)
     {
         if (this.autoRun===false && forceRun!==true)
             return;
-        var code = this.editor.getCode();
-        this.motion.setData({ header:this.storage.header,
-                                code:code});
-        this.displayMessage("Running G Code");
-        this.motion.run();
+        // Don't update before have typed to the end
+        var _this = this;
+        clearTimeout(CWS.Controller._interpretTmr);
+        CWS.Controller._interpretTmr = setTimeout(function () {
+            var code = _this.editor.getCode();
+            _this.motion.setData({ header: _this.storage.header,
+                                    code:code});
+            _this.displayMessage("Running G Code");
+            _this.motion.run();
+        }, forceRun ? 3000 : 0);
     };
 
 CWS.Controller.prototype.updateWorkpieceDraw = function()
