@@ -2,7 +2,7 @@
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
  */
 
-CWS.Controller = function (editor,storage,renderer,motion,autoRun) 
+CWS.Controller = function (editor,storage,renderer,motion,autoRun)
 	{
 		this.storage = storage;
 		this.editor = editor;
@@ -36,35 +36,58 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
             }
         // Init the editor
         var controller = this;
-        this.editor.subscribeToCodeChanged(function (code,ev) 
+        this.editor.subscribeToCodeChanged(function (code,ev)
         {
             controller.save();
         });
-        this.editor.subscribeToCodeChanged(function (code,ev) 
+        this.editor.subscribeToCodeChanged(function (code,ev)
         {
             controller.runInterpreter();
         });
+
         // Add the renderer to the container
-        document.getElementById("canvasContainer").appendChild(renderer.domElement);
+        var cont = document.getElementById("canvasContainer");
+        cont.appendChild(renderer.domElement);
+
+        // update view on mouse events
+        this._btnDown = false;
+        function updateView(event){
+            controller.controls.update();
+            controller.renderer.render();
+        }
+		cont.addEventListener("mousewheel", updateView);
+        cont.addEventListener("mousedown", function(){
+            controller._btnDown = true;
+        });
+        document.addEventListener("mouseup", function(){
+            controller._btnDown = false;
+        })
+		cont.addEventListener("mousemove", function(event) {
+            if (controller._btnDown)
+                updateView(event);
+        });
+
         // Set renderer size
         this.windowResize();
         // Save changes every 60 seconds
-        setInterval(function () 
+        setInterval(function ()
             {
                 if (controller.saveFlag===0)
                     return;
-                controller.save(true); 
+                controller.save(true);
             }, 60000);
-        $(window).bind("beforeunload", function() 
-        { 
+        $(window).bind("beforeunload", function()
+        {
             if (controller.saveFlag===0)
                 return;
             controller.save(true);
         });
         this.autoRun = autoRun;
+
+        this.render();
     };
 
-CWS.Controller.prototype = 
+CWS.Controller.prototype =
     {
         get run2D()
         {
@@ -99,6 +122,7 @@ CWS.Controller.prototype =
             {
                 this.machine.meshWorkpiece.visible = false;
             }
+            this.updateWireframe();
         },
     };
 
@@ -263,9 +287,9 @@ CWS.Controller.prototype.createDatGUI = function ()
     {
         if (document.getElementById("gui"))
             document.getElementById("gui").remove();
-        
+
         var material3D = new THREE.MeshStandardMaterial(
-        { 
+        {
             color: 0xff4400,
             shading: THREE.SmoothShading,
             emissive: 0xff4400,
@@ -280,12 +304,12 @@ CWS.Controller.prototype.createDatGUI = function ()
         material3D.opacity=1;
         material3D.visible=true;
         material3D.side = THREE.DoubleSide;
-        
+
         function handleColorChange ( color )
         {
             return function ( value )
             {
-                if (typeof value === "string") 
+                if (typeof value === "string")
                 {
                     value = value.replace('#', '0x');
                 }
@@ -296,7 +320,7 @@ CWS.Controller.prototype.createDatGUI = function ()
         gui.domElement.id = 'gui';
         gui.close();
         document.getElementById("canvasContainer").appendChild(gui.domElement);
-        var data = 
+        var data =
         {
             color : material3D.color.getHex(),
             emissive : material3D.emissive.getHex(),
@@ -311,7 +335,7 @@ CWS.Controller.prototype.createDatGUI = function ()
         folder.addColor( data, 'emissive' ).onChange( handleColorChange( material3D.emissive ) );
         folder.add( material3D, 'wireframe' );
         //        folder.add( material3D, 'refractionRatio', 0, 1 );
-    
+
         this.material3D = material3D;
     };
 
@@ -336,7 +360,7 @@ CWS.Controller.prototype.render = function(forceUpdate)
     {
         this.controls.update();
         // if (this.controls.controlUpdated || forceUpdate)
-        // {   
+        // {
             this.renderer.render(this.controls);
             // this.controls.controlUpdated = false;
         // }
@@ -347,7 +371,7 @@ CWS.Controller.prototype.save = function(forceSave)
         // Set the number of changes to save the code
         var changes = 30;
         if (forceSave===true)
-            this.saveFlag=Infinity;    
+            this.saveFlag=Infinity;
         this.saveFlag++;
         // Don't save
         if (this.saveFlag<changes)
@@ -379,13 +403,13 @@ CWS.Controller.prototype.updateWorkpieceDraw = function()
         var mesh;
         var boundingSphere=this.machine.boundingSphere;
         this.displayMessage("Generating geometry");
-        
+
         this.update2D();
         this.update3D();
-       
+
         if (this.machine.mtype==="3D Printer" && boundingSphere===false)
             this.renderer.lookAt3DPrinter(this.machine.boundingSphere.center,this.machine.boundingSphere.radius);
-        
+
         if (this.machine.motionData.error.length!==0)
         {
             this.displayMessage(this.machine.motionData.error[0],true);
@@ -405,6 +429,7 @@ CWS.Controller.prototype.update2D = function()
         {
             this.machine.mesh2D.visible = false;
         }
+        this.render();
     };
 
 CWS.Controller.prototype.update3D = function()
@@ -418,11 +443,13 @@ CWS.Controller.prototype.update3D = function()
         {
             this.machine.mesh3D.visible = false;
         }
+        this.render();
     };
 
 CWS.Controller.prototype.updateWireframe = function()
     {
         this.renderer.addMesh("2DWorkpieceDash",this.machine.meshWorkpiece);
+        this.render();
     };
 
 CWS.Controller.prototype.runAnimation = function(animate)
