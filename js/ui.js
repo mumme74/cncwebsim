@@ -3,7 +3,7 @@
  */
 
 
-CWS.UI = function (controller) 
+CWS.UI = function (controller)
 	{
 		this.controller = controller;
 		var topMenu = $("#topMenu");
@@ -12,7 +12,7 @@ CWS.UI = function (controller)
 			.mouseleave(function(){topMenu.css('height','45px');})
 		});
 		topMenu.click(
-			function  (ev) 
+			function  (ev)
 			{
 				var title = ev.target.title
 				switch (title)
@@ -51,63 +51,35 @@ CWS.UI = function (controller)
 		this.elementBottomMenu = $(document.getElementById("bottomMenu"));
 		this.elementBody = $(document.body);
 		this.resize();
-		$("#saveIcon").css('color', 'green').click(function (ev) 
+		$("#saveIcon").css('color', 'green').click(function (ev)
 		{
 			controller.save(true);
 		});
-		$("#autoRunIcon").css('color', 'green').click(function () 
+		this.settingsButton("#autoRunIcon", "autoRun", function ()
 		{
 			controller.autoRun=!controller.autoRun;
-			if (controller.autoRun===false)
-				$(this).css('color','red');
-			else
-			{
-				$(this).css('color','green');
+			if (controller.autoRun)
 				controller.runInterpreter(true);
-			}
 		});
-		$("#runIcon").click(function (ev) 
+		$("#runIcon").click(function (ev)
 		{
 			controller.runInterpreter(true);
 		});
-		$("#run2DIcon").css('color', 'green').click(function (ev) 
+		this.settingsButton("#run2DIcon", "run2D", function (ev)
 		{
 			controller.run2D=!controller.run2D;
-			if (controller.run2D===false)
-				$(this).css('color','red');
-			else
-			{
-				$(this).css('color','green');
-			}
 			controller.update2D();
 		});
-		$("#run3DIcon").css('color', 'green').click(function (ev) 
+		this.settingsButton("#run3DIcon", "run3D", function (ev)
 		{
 			controller.run3D=!controller.run3D;
-			if (controller.run3D===false)
-				$(this).css('color','red');
-			else
-			{
-				$(this).css('color','green');
-			}
 			controller.update3D();
 		});
-		var color = "green";
-		if (controller.renderer.displayWireframe===false)
-			color="red";
-		$("#wireframeIcon").css('color', color).click(function (ev) 
+		this.settingsButton("#wireframeIcon", "runWireframe", function (ev)
 		{
 			controller.runWireframe=!controller.runWireframe;
-			if (controller.runWireframe===false)
-			{
-				$(this).css('color','red');
-			}
-			else
-			{
-				$(this).css('color','green');
-			}
 		});
-		$("#runAnimationIcon").click(function (ev) 
+		$("#runAnimationIcon").click(function (ev)
 		{
 			controller.runAnimation();
 		});
@@ -119,7 +91,7 @@ CWS.UI.prototype.resize = function()
 	{
 		var width = this.elementBody.innerWidth();
 		var height = this.elementBody.innerHeight();
-		
+
 		var editorWidth;
 		if (this.elementEditor.css('display')==='none')
 			editorWidth = 0;
@@ -132,7 +104,7 @@ CWS.UI.prototype.resize = function()
 		this.elementBottomMenu.innerWidth(width-editorWidth);
 	};
 
-CWS.UI.prototype.createStats = function (v) 
+CWS.UI.prototype.createStats = function (v)
 	{
 		if (v===false)
 			return {update:function(){}};
@@ -148,10 +120,23 @@ CWS.UI.prototype.createStats = function (v)
 		return stats;
 	};
 
+CWS.UI.prototype.settingsButton = function (node, prop, cb)
+    {
+		if (!cb) cb = function() {};
+		var _t = this;
+		node = $(node);
+		node.css('color', this.controller[prop] ? "green" : "red");
+		node.click(function(event)
+		{
+			cb.call(node, event);
+			node.css('color', _t.controller[prop] ? "green" : "red");
+		});
+	};
+
 CWS.DialogBox = function (title)
 	{
 		$("#dialogBox").remove();
-		
+
 		this.dialog = $( '<div id="dialogBox" title="'+title+'" ></div>');
 	}
 
@@ -177,13 +162,13 @@ CWS.DialogBox.prototype.newProject = function (controller)
 		this.dialog.dialog(
 	      {
 	      width: 400,
-	      buttons: 
-	        { 
+	      buttons:
+	        {
 	            "Create": function()
 	            {
 	            	var values = {};
 	            	var result = $(this.firstChild).serializeArray();
-	            	for (var i = 0; i < result.length; i++) 
+	            	for (var i = 0; i < result.length; i++)
 	            	{
 	            		values[result[i].name]=result[i].value;
 	            	}
@@ -202,13 +187,13 @@ CWS.DialogBox.prototype.openProject = function (controller)
 	{
 		html = '<ul class="tableList">';
 		var fileList = Object.keys(controller.listProjects());
-		for (var i = 0; i < fileList.length; i++) 
+		for (var i = 0; i < fileList.length; i++)
 		{
 			html += '<li><span class="icon icon-file-text2"></span>'+fileList[i]+'</li>';
 		}
 		html += "</ul>";
         var dialog = this.dialog;
-		html = $(html).click(function (event) 
+		html = $(html).click(function (event)
 			{
                 if (event.target.parentElement.tagName.toLocaleLowerCase()=="div")
                     return;
@@ -228,8 +213,8 @@ CWS.DialogBox.prototype.openProject = function (controller)
 		this.dialog.dialog(
 	      {
 	      width: 400,
-	      buttons: 
-	        { 
+	      buttons:
+	        {
 	          	"Cancel": function()
 	            {
           			$(this).dialog("close");
@@ -246,7 +231,7 @@ CWS.DialogBox.prototype.openMachine = function (controller)
 		'  <li><span class="icon icon-printer"></span>3D Printer</li>'+
 		'</ul>';
         var dialog = this.dialog;
-		html = $(html).click(function (event) 
+		html = $(html).click(function (event)
 			{
                 if (event.target.parentElement.tagName.toLocaleLowerCase()=="div")
                     return;
@@ -266,8 +251,8 @@ CWS.DialogBox.prototype.openMachine = function (controller)
 		this.dialog.dialog(
 	      {
 	      width: 400,
-	      buttons: 
-	        { 
+	      buttons:
+	        {
 	          	"Cancel": function()
 	            {
           			$(this).dialog("close");
@@ -331,13 +316,13 @@ CWS.DialogBox.prototype.workpieceDimensions = function (controller)
 		this.dialog.dialog(
 	      {
 	      width: 400,
-	      buttons: 
-	        { 
+	      buttons:
+	        {
 	            "Save": function()
 	            {
 	            	var values = {};
 	            	var result = $(this.firstChild).serializeArray();
-	            	for (var i = 0; i < result.length; i++) 
+	            	for (var i = 0; i < result.length; i++)
 	            	{
 	            		values[result[i].name]=parseFloat(result[i].value);
 	            	}
@@ -370,13 +355,13 @@ CWS.DialogBox.prototype.tool = function (controller)
 			this.dialog.dialog(
 		      {
 		      width: 400,
-		      buttons: 
+		      buttons:
 		        {
 		            "Save": function()
 		            {
 		            	var values = {};
 		            	var result = $(this.firstChild).serializeArray();
-		            	for (var i = 0; i < result.length; i++) 
+		            	for (var i = 0; i < result.length; i++)
 		            	{
 		            		values[result[i].name]=parseFloat(result[i].value);
 		            	}
@@ -409,13 +394,13 @@ CWS.DialogBox.prototype.tool = function (controller)
 			this.dialog.dialog(
 		      {
 		      width: 400,
-		      buttons: 
+		      buttons:
 		        {
 		            "Save": function()
 		            {
 		            	var values = {};
 		            	var result = $(this.firstChild).serializeArray();
-		            	for (var i = 0; i < result.length; i++) 
+		            	for (var i = 0; i < result.length; i++)
 		            	{
 		            		values[result[i].name]=parseFloat(result[i].value);
 		            	}
@@ -436,7 +421,7 @@ CWS.DialogBox.prototype.tool = function (controller)
 			this.dialog.dialog(
 		      {
 		      width: 400,
-		      buttons: 
+		      buttons:
 		        {
 		            "Ok": function()
 		            {

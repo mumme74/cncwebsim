@@ -1,10 +1,10 @@
 /**
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
  */
- 
+
 
 // Keys: currentProjectCode, currentProjectHeader, projects, ideSettings
-CWS.Storage = function (options) 
+CWS.Storage = function (options)
 	{
 		options = options || {};
 		this.useCompression = (options.useCompression===undefined)?true:options.useCompression;
@@ -15,13 +15,20 @@ CWS.Storage = function (options)
 	    this.isFirstRun = false;
 	    this.currentProjectHeaderCache = {};
 	    this.projectsNameCache = {};
+		// All keys to check for when booting
+		this._keys = [
+			{name: "currentProjectCode", defVlu: ""},
+			{name: "projects", defVlu: {}},
+			{name: "ideSettings", defVlu: {}},
+			{name: "currentProjectHeader", defVlu: {}}
+		];
 
 	    this.storageAvailable();
 //	     this.reset();
 	    this.storageCheckKeys();
 	};
 // For external access
-CWS.Storage.prototype = 
+CWS.Storage.prototype =
 	{
 	    get code()
 	    {
@@ -74,19 +81,19 @@ CWS.Storage.prototype =
 
 CWS.Storage.prototype.constructor = CWS.Storage;
 // Check if local storage is available and create
-CWS.Storage.prototype.storageAvailable = function () 
+CWS.Storage.prototype.storageAvailable = function ()
 	{
         if (this.useLocalStorage == true)
         {
             this.storage = window["localStorage"];
-            try 
+            try
             {
                 var x = '__storage_test__';
                 this.storage.setItem(x, x);
                 this.storage.removeItem(x);
                 this.isAvailable = true;
             }
-            catch(e) 
+            catch(e)
 		    {
                 this.useLocalStorage = false;
             }
@@ -96,7 +103,7 @@ CWS.Storage.prototype.storageAvailable = function ()
 			// If local storage is not available create
 			// an object with the same interface to keep
 			// the application running
-			this.storage = 
+			this.storage =
 			{
 				data: {},
 				getItem: function (key)
@@ -107,7 +114,7 @@ CWS.Storage.prototype.storageAvailable = function ()
 				{
 					this.data[key] = data;
 				},
-				removeItem: function (key) 
+				removeItem: function (key)
 				{
 					delete this.data[key];
 				},
@@ -116,45 +123,24 @@ CWS.Storage.prototype.storageAvailable = function ()
 		}
 	};
 // Create the missing keys
-CWS.Storage.prototype.storageCheckKeys = function () 
+CWS.Storage.prototype.storageCheckKeys = function ()
 	{
-		var data = this.storage.getItem("currentProjectCode");
-		if( data === null)
-		{
-			data = "";
-			this.saveData("currentProjectCode",data);
-			this.isFirstRun = true;
-		}
+		// add them if non existant, ie: first run
+		this._keys.forEach(function(obj){
+			var data = this.storage.getItem(obj.name);
+			if (data === null) {
+				this.saveData(obj.defVlu);
+				this.isFirstRun = true;
+			}
+		}, this);
 
-		data = this.storage.getItem("projects");
-		if( data === null)
-		{
-			data = {};
-			this.saveData("projects",data);
-			this.isFirstRun = true;
-		}
 		data = this.getData("projects");
 		this.projectsNameCache = {};
-		for (var i in data) 
+		for (var i in data)
 		{
 			this.projectsNameCache[i] = data[i].header.machine.mtype;
 		}
 
-		data = this.storage.getItem("ideSettings");
-		if( data === null)
-		{
-			data = {};
-			this.saveData("ideSettings",data);
-			this.isFirstRun = true;
-		}
-		
-		data = this.storage.getItem("currentProjectHeader");
-		if( data === null)
-		{
-			data = {};
-			this.saveData("currentProjectHeader",data);
-			this.isFirstRun = true;
-		}
 		data = this.getData("currentProjectHeader");
 		this.currentProjectHeaderCache = data;
         if (data.name!==undefined)
@@ -172,6 +158,15 @@ CWS.Storage.prototype.getData = function (key)
 		return data;
 	};
 
+// get data from subobject
+CWS.Storage.prototype.getObjData = function (key, objKey, defVlu)
+	{
+		var data = this.getData(key);
+		if (objKey in data)
+			return data[objKey];
+		return defVlu;
+	};
+
 CWS.Storage.prototype.saveData = function (key,data)
 	{
 		var _data = JSON.stringify(data);
@@ -182,21 +177,29 @@ CWS.Storage.prototype.saveData = function (key,data)
 		this.storage.setItem(key,_data);
 	};
 
-CWS.Storage.prototype.saveCurrentProjectCode = function (code) 
+// save object data
+CWS.Storage.prototype.setObjData = function (key, objKey, newVlu)
+	{
+		var data = this.getData(key);
+		data[objKey] = newVlu;
+		this.saveData(key, data);
+	};
+
+CWS.Storage.prototype.saveCurrentProjectCode = function (code)
 	{
 		this.saveData("currentProjectCode",code);
 	};
 
-CWS.Storage.prototype.saveCurrentProjectHeader = function (header) 
+CWS.Storage.prototype.saveCurrentProjectHeader = function (header)
 	{
 		this.currentProjectHeaderCache = header;
 		this.saveData("currentProjectHeader",header);
 	};
 
-CWS.Storage.prototype.saveProjects = function (projects) 
+CWS.Storage.prototype.saveProjects = function (projects)
 	{
 		this.projectsNameCache = {};
-		for (var i in projects) 
+		for (var i in projects)
 		{
 			this.projectsNameCache[i] = projects[i].header.machine.mtype;
 		};
@@ -205,7 +208,7 @@ CWS.Storage.prototype.saveProjects = function (projects)
 // Create a new project.
 // If the project already exists and unique name will be created.
 // Set saveCurrent to true to make sure the current opened project will be saved.
-CWS.Storage.prototype.createNewProject = function (projectName,machine,saveCurrent) 
+CWS.Storage.prototype.createNewProject = function (projectName,machine,saveCurrent)
 	{
 		if (saveCurrent==true)
 			this.saveCurrentProjectToProjectsList();
@@ -217,7 +220,7 @@ CWS.Storage.prototype.createNewProject = function (projectName,machine,saveCurre
 		return project.projectName;
 	};
 
-CWS.Storage.prototype.loadProject = function (projectName,saveCurrent) 
+CWS.Storage.prototype.loadProject = function (projectName,saveCurrent)
 	{
 		if (saveCurrent==true)
 			this.saveCurrentProjectToProjectsList();
@@ -229,7 +232,7 @@ CWS.Storage.prototype.loadProject = function (projectName,saveCurrent)
 		}
 	};
 
-CWS.Storage.prototype.saveCurrentProjectToProjectsList = function () 
+CWS.Storage.prototype.saveCurrentProjectToProjectsList = function ()
 	{
 		var currentProject = {};
 		currentProject.header = this.getData("currentProjectHeader");
@@ -241,7 +244,7 @@ CWS.Storage.prototype.saveCurrentProjectToProjectsList = function ()
 		this.saveProjects(projects);
 	};
 
-CWS.Storage.prototype.getUniqueProjectName = function (projectName) 
+CWS.Storage.prototype.getUniqueProjectName = function (projectName)
 	{
 		if (projectName in this.projectsNameCache)
 		{
@@ -257,7 +260,7 @@ CWS.Storage.prototype.getUniqueProjectName = function (projectName)
 		return projectName;
 	};
 
-CWS.Storage.prototype.reset = function () 
+CWS.Storage.prototype.reset = function ()
 	{
 		this.storage.clear();
 	}
