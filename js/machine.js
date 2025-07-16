@@ -3,10 +3,10 @@
  */
 
 
-CWS.Machine = function (options) 
+CWS.Machine = function (options)
 	{
 		options = options || {};
-		
+
 		this.renderResolution = options.renderResolution||64;
 		this.workpiece = options.workpiece;
 		this.machine = options.machine;
@@ -17,7 +17,7 @@ CWS.Machine = function (options)
 													g3: new THREE.Color(0,1,1),};
 		this.meshes = {mesh2D:false,mesh3D:false,meshWorkpiece:false};
 		// For 2D drawing
-		this.material2D = new THREE.ShaderMaterial( 
+		this.material2D = new THREE.ShaderMaterial(
 		{
 			uniforms: {
 				g0: { type: "c", value: this.lineColors.g0 },
@@ -33,36 +33,36 @@ CWS.Machine = function (options)
 
 CWS.Machine.prototype.constructor = CWS.Machine;
 
-CWS.Machine.prototype.setMotion = function (motionData) 
+CWS.Machine.prototype.setMotion = function (motionData)
 	{
 		this.motionData = motionData;
 		this.meshes.mesh2D = false;
 		this.meshes.mesh3D = false;
 	};
 
-CWS.Machine.prototype.create2DWorkpiece = function () 
+CWS.Machine.prototype.create2DWorkpiece = function ()
 	{
 		throw new Error( "call to abstract method" );
 	};
 
-CWS.Machine.prototype.create3DWorkpiece = function () 
+CWS.Machine.prototype.create3DWorkpiece = function ()
 	{
 		throw new Error( "call to abstract method" );
 	};
 
-CWS.Machine.prototype.create2DWorkpieceLimits = function () 
+CWS.Machine.prototype.create2DWorkpieceLimits = function ()
 	{
 		return {name:"2DWorkpieceDash"};
 	};
 
-CWS.Machine.prototype.createProgram = function (gl, vertexShader, fragmentShader) 
+CWS.Machine.prototype.createProgram = function (gl, vertexShader, fragmentShader)
 	{
-		function compile (shaderSource,type) 
+		function compile (shaderSource,type)
 		{
 		  	var shader = gl.createShader(gl[type]);
 		  	gl.shaderSource(shader, shaderSource);
 			gl.compileShader(shader);
-			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) 
+			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
 			{
 			  throw gl.getShaderInfoLog(shader)+"\n"+shaderSource;
 			}
@@ -81,24 +81,24 @@ CWS.Machine.prototype.createProgram = function (gl, vertexShader, fragmentShader
 	      throw "Could not initialize shaders";
 
 	  	return shaderProgram;
-	}; 
+	};
 
 CWS.Machine.prototype.updateWorkpieceDimensions = function ()
     {
-        
+
     };
 
 CWS.Machine.prototype.updateTool = function ()
     {
-        
+
     };
 
 CWS.Machine.prototype.updateRendererResolution = function ()
     {
-        
+
     };
 
-CWS.Machine.prototype.create2DWorkpiece = function () 
+CWS.Machine.prototype.create2DWorkpiece = function ()
 	{
 		this.mesh2D.visible = true;
 		// MAYBE MISSING SOMETHING ABOUT POSITION
@@ -118,7 +118,7 @@ CWS.Machine.prototype.create2DWorkpiece = function ()
         // work here because the buffer size keeps changing all the time
         // I don't want to create a new mesh every time. Adding again the
         // position and vcolor will replace the buffer. I'm not that sure
-        // if I'm doing something that could break the code later. 
+        // if I'm doing something that could break the code later.
         geometry.addAttribute( 'position', new THREE.BufferAttribute( this.motionData.positions ,3));
 		geometry.addAttribute( 'vcolor', new THREE.BufferAttribute( this.motionData.color ,1 ));
         geometry.setDrawRange(0,Infinity);
@@ -132,46 +132,48 @@ CWS.Machine.prototype.create2DWorkpiece = function ()
         	dataSize: 2,
         	step:1,
         	animationState: false,
-        	touggleAnimation: function () 
+        	toggleAnimation: function (renderer)
         	{
         		this.animationState = !this.animationState;
-        		this.end = 0;
-        		this.animate(this.animationState);
+				if (this.animationState)
+				{
+        			this.end = 0;
+					this.next = this._next;
+        			this.next(renderer);
+				}
+				else
+					this.stopAnimation();
         	},
-        	animate: function (b) 
-        	{
-        		if (b===true)
-        		{
-        			this.next = function () 
-		        	{
-		        		if (this.end>this.size)
-		        		{
-		        			this.animationState = false;
-		        			return false;
-		        		}
-		        		this.end += this.step*this.dataSize;
-		        		while (geometry.attributes.vcolor.array[this.end]>=2)
-		        		{
-		        			this.end += 2;
-		        		}
-		        		geometry.setDrawRange(this.beg,this.end);
-		        		return true;
-		        	}
-        		}
-        		else
-        		{
-        			this.next = function(){return false;};
-        			geometry.setDrawRange(0,Infinity);	
-        		}
+			_next: function (renderer)
+			{
+				if (this.end>this.size)
+				{
+					this.stopAnimation(renderer);
+					return;
+				}
+
+				this.end += this.step*this.dataSize;
+				while (geometry.attributes.vcolor.array[this.end]>=2)
+				{
+					this.end += 2;
+				}
+				geometry.setDrawRange(this.beg,this.end);
         	},
-        	next: function(){return false;},
+			_nextDef: function(renderer) {},
+			stopAnimation: function(renderer) {
+				geometry.setDrawRange(0,Infinity);
+				this.animationState = false;
+				this.next = this._nextDef;
+				renderer.animateFinished.call(renderer, this);
+			}
     	};
+		this.mesh2D.animation.next = this.mesh2D.animation._nextDef;
     };
 
-CWS.Machine.prototype.create3DWorkpiece = function () 
+CWS.Machine.prototype.create3DWorkpiece = function ()
 	{
 		this.mesh3D.visible = true;
-        
+
         if (this.meshes.mesh3D === true)
             return;
 

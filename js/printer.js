@@ -18,7 +18,7 @@ CWS.Printer.prototype = Object.create( CWS.Machine.prototype );
 
 CWS.Printer.prototype.constructor = CWS.Printer;
 
-CWS.Printer.prototype.initGeometry2D = function () 
+CWS.Printer.prototype.initGeometry2D = function ()
     {
         var geometry = new THREE.BufferGeometry();
         geometry.boundingSphere = new THREE.Sphere( new THREE.Vector3(0,0,0),99999);
@@ -44,7 +44,7 @@ CWS.Printer.prototype.initGeometry3D = function ()
         this.mesh3D = mesh;
     };
 
-CWS.Printer.prototype.create2DWorkpieceLimits = function () 
+CWS.Printer.prototype.create2DWorkpieceLimits = function ()
 	{
 		if (this.meshes.meshWorkpiece === true)
             return;
@@ -58,7 +58,7 @@ CWS.Printer.prototype.create2DWorkpieceLimits = function ()
         this.meshWorkpiece = mesh;
 	};
 
-CWS.Printer.prototype._create3DWorkpiece = function () 
+CWS.Printer.prototype._create3DWorkpiece = function ()
 	{
         var positions = this.motionData.positions;
         var vcolor = this.motionData.color;
@@ -135,7 +135,7 @@ CWS.Printer.prototype._create3DWorkpiece = function ()
 			vertices[iv+21] = p5[0];
 			vertices[iv+22] = p5[1];
 			vertices[iv+23] = z1+d;
-			
+
 			var i=iv/3;
 
 			index[ii++] = i+3; index[ii++] = i+2; index[ii++] = i+7;
@@ -168,37 +168,39 @@ CWS.Printer.prototype._create3DWorkpiece = function ()
         	dataSize: 24,
         	step:1,
         	animationState: false,
-        	touggleAnimation: function () 
+        	toggleAnimation: function (renderer)
         	{
         		this.animationState = !this.animationState;
-        		this.end = 0;
-        		this.animate(this.animationState);
+				if (this.animationState)
+				{
+					this.end = 0;
+					this.next = this._next;
+					this.next(renderer);
+				} else
+					this.stopAnimation()
         	},
-        	animate: function (b) 
-        	{
-        		if (b===true)
-        		{
-        			this.next = function () 
-		        	{
-		        		if (this.end>this.size)
-		        		{
-		        			this.animationState = false;
-		        			return;
-		        		}
-		        		this.end += this.step*this.dataSize;
-		        		while (vcolor[this.end/this.dataSize*2]>=2)
-		        		{
-		        			this.end += this.dataSize;
-		        		}
-		        		geometry.setDrawRange(this.beg,this.end);
-		        	}
-        		}
-        		else
-        		{
-        			this.next = function(){};
-        			geometry.setDrawRange(0,Infinity);	
-        		}
+        	_next: function (renderer)
+			{
+				if (this.end>this.size)
+				{
+					this.stopAnimation(renderer)
+					return;
+				}
+				this.end += this.step*this.dataSize;
+				while (vcolor[this.end/this.dataSize*2]>=2)
+				{
+					this.end += this.dataSize;
+				}
+				geometry.setDrawRange(this.beg,this.end);
         	},
-        	next: function(){},
+			_nextDef: function(renderer) {},
+			stopAnimation: function(renderer)
+			{
+				this.animationState = false;
+				geometry.setDrawRange(0,Infinity);
+				this.next = this._nextDef;
+				renderer.animateFinished.call(renderer, this);
+			}
     	};
+		this.mesh3D.animation.next = this.mesh3D.animation._nextDef;
 	};

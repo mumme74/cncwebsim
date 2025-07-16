@@ -3,7 +3,7 @@
  */
 
 
-CWS.Renderer = function (id,options) 
+CWS.Renderer = function (id,options)
 	{
 		options = options || {};
 
@@ -15,12 +15,12 @@ CWS.Renderer = function (id,options)
 		this.renderer.setClearColor( 0xffffff );
 		this.renderer.setPixelRatio( window.devicePixelRatio );
 		this.renderer.setSize( window.innerWidth, window.innerHeight );
-		
+
 		this.renderer.domElement.id=id;
 		this.renderer.domElement.style['z-index']=41;
 
 		this.scene = new THREE.Scene();
-	
+
 		var ambientLight = new THREE.AmbientLight( 0x000000 );
 		this.scene.add( ambientLight );
 
@@ -28,7 +28,7 @@ CWS.Renderer = function (id,options)
 		lights[0] = new THREE.PointLight( 0xffffff, 1, 0 );
 		lights[1] = new THREE.PointLight( 0xffffff, 1, 0 );
 		lights[2] = new THREE.PointLight( 0xffffff, 1, 0 );
-	
+
 		lights[0].position.set( 0, 200, 0 );
 		lights[1].position.set( 100, 200, 100 );
 		lights[2].position.set( -100, -200, -100 );
@@ -62,9 +62,11 @@ CWS.Renderer = function (id,options)
 		this.camera.position.y = 0;
 		this.camera.position.z = 100;
 		this.camera.lookAt( this.scene.position );
+
+		this._runningAnim = [];
 	}
 
-CWS.Renderer.prototype = 
+CWS.Renderer.prototype =
 	{
 		get domElement()
 		{
@@ -123,7 +125,7 @@ CWS.Renderer.prototype.setCamera = function (camera)
 			this.camera.toOrthographic();
 	};
 
-CWS.Renderer.prototype.setSize = function (width,height) 
+CWS.Renderer.prototype.setSize = function (width,height)
 	{
 		this.width = width;
 		this.height = height;
@@ -146,19 +148,47 @@ CWS.Renderer.prototype.render = function (controls)
 	{
 		if (this['2DWorkpiece'] && this['2DWorkpiece'].animation)
 		{
-			this['2DWorkpiece'].animation.next()
+			this['2DWorkpiece'].animation.next(this)
 		}
 		if (this['3DWorkpiece'] && this['3DWorkpiece'].animation)
 		{
-			this['3DWorkpiece'].animation.next();
+			this['3DWorkpiece'].animation.next(this);
 		}
 		this.renderer.render( this.scene, this.camera );
 	};
 
-CWS.Renderer.prototype.animate = function (b,meshName)
+CWS.Renderer.prototype.animateFinished = function(anim)
+	{
+		var idx = this._runningAnim.findIndex(o=>o.anim === anim);
+		if (idx !== -1)
+			this._runningAnim.splice(idx,1);
+		this.render(); // trailing render at the end
+	};
+
+CWS.Renderer.prototype.animate = function (meshName, cb)
 	{
 		if (this[meshName] && this[meshName].animation)
-			this[meshName].animation.touggleAnimation();
+		{
+			this._runningAnim.push({
+				cb:cb || function(){},
+				anim: this[meshName].animation});
+			this[meshName].animation.toggleAnimation(this);
+		}
+
+		// contiue each frame until animations are done
+		let cnt = 0;
+		const eachFrm = (time)=>{
+			if (this._animationFrame === time) return; // already done this frame
+			for (const o of this._runningAnim)
+			 { o.anim.next(this); o.cb() }
+			this._animationFrame = time;
+			if (this._runningAnim.length) {
+				requestAnimationFrame(eachFrm);
+				if (cnt++ % 10 == 0)
+					this.renderer.render(this.scene, this.camera);
+			}
+		}
+		requestAnimationFrame(eachFrm);
 	};
 
 CWS.Renderer.prototype.addMesh = function (meshName,mesh)
