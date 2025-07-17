@@ -3,7 +3,7 @@
  */
 
 
-// This file contains implementations for 
+// This file contains implementations for
 // Parser
 // GLine
 // Command
@@ -11,7 +11,7 @@
 
 
 // A Parser takes raw line data and parse into commands for the simulator
-CWS.Parser = function () 
+CWS.Parser = function ()
   {
     this.glines = [];
     this.commands = [];
@@ -20,27 +20,27 @@ CWS.Parser = function ()
     CWS.GLine.prototype.parser = this;
   }
 // Returns the next command from the list
-CWS.Parser.prototype.getCommand = function() 
+CWS.Parser.prototype.getCommand = function()
   {
     return this.commands.shift();
   };
 // Takes a line as a string and append a GLine to the array this.glines.
 // If the line number is given the function will parse the line again.
 // If the lineNumber is a null value the function will take as the last line
-CWS.Parser.prototype.parseLine = function(line) 
+CWS.Parser.prototype.parseLine = function(line, errList)
   {
       var gline = new CWS.GLine(line);
       gline.lineNumber = this.glines.length+1;
-      gline.processLine();
-      this.glines.push(gline);  
+      gline.processLine(errList);
+      this.glines.push(gline);
   };
 // Takes a code, split the lines and parse
-CWS.Parser.prototype.parseCode = function(code) 
+CWS.Parser.prototype.parseCode = function(code, errList)
   {
     code=code.split("\n");
-    for (var i = 0; i < code.length; i++) 
+    for (var i = 0; i < code.length; i++)
     {
-      this.parseLine(code[i],null);
+      this.parseLine(code[i],errList);
     }
   };
 // A GLine contains all the parsed data from a line.
@@ -48,7 +48,7 @@ CWS.Parser.prototype.parseCode = function(code)
 // var gl = new CWS.GLine(raw_line_string);
 // gl.lineNumber = lineNumber
 // gl.processLine();
-CWS.GLine = function (line) 
+CWS.GLine = function (line)
   {
     this.coments = [];
     this.lineNumber = 0;
@@ -58,7 +58,7 @@ CWS.GLine = function (line)
 // A raw line is processed by removing comments, spitting the line into words and numbers
 // and separating and sorting all the commands in a line
 // Final result will be in Parser.commands in the right order to be processed by the simulator.
-CWS.GLine.prototype.processLine = function() 
+CWS.GLine.prototype.processLine = function(errList)
   {
     var line = this.removeComment(this.rawLine);
     line = this.splitLine(line);
@@ -69,19 +69,20 @@ CWS.GLine.prototype.processLine = function()
     catch (e)
     {
       console.log(e);
+      errList.push(e);
     }
     this.activeCommand = this.parser.activeCommand;
   };
 // Lowercase the line and remove comments
-CWS.GLine.prototype.removeComment = function(line) 
+CWS.GLine.prototype.removeComment = function(line)
   {
     // A comment can be anything inside left and right parenthesis or anything after a semicolon
-    var re = /(;.*)|(\([^)]*\))/g; 
+    var re = /(;.*)|(\([^)]*\))/g;
     var m;
-    
-    while ((m = re.exec(line)) !== null) 
+
+    while ((m = re.exec(line)) !== null)
     {
-      if (m.index === re.lastIndex) 
+      if (m.index === re.lastIndex)
       {
           re.lastIndex++;
       }
@@ -92,14 +93,14 @@ CWS.GLine.prototype.removeComment = function(line)
   };
 // Splits the line (string) into a vector containing pairs
 // of characters and float numbers.
-CWS.GLine.prototype.splitLine = function(line) 
+CWS.GLine.prototype.splitLine = function(line)
   {
-    var re = /([a-z])([+-]?\d*\.?\d*)/g; 
+    var re = /([a-z])([+-]?\d*\.?\d*)/g;
     var m;
     var result = [];
-    while ((m = re.exec(line)) !== null) 
+    while ((m = re.exec(line)) !== null)
     {
-      if (m.index === re.lastIndex) 
+      if (m.index === re.lastIndex)
       {
           re.lastIndex++;
       }
@@ -113,6 +114,9 @@ CWS.GLine.prototype.splitLine = function(line)
       }
       result.push([m[1],m[2]]);
     }
+    // test for invalid parameter
+    if (/(?:[a-z]{2,}|[a-z][-+]*\d+\.*\d* \d)/.test(line))
+        throw new CWS.ErrorParser(this.lineNumber,`incorrect parameters`,this.rawLine);
     return result;
   };
 // A line may contain more than one command for the machine.
@@ -148,29 +152,29 @@ CWS.GLine.prototype.splitLine = function(line)
 // A G code for motion (G0,G1,G2,G3) will only be added to the commands list if it has axis words
 // If axis words appears alone a G function will be created with the current motion mode.
   // General functions and parameters
-  // G0    X,Y,Z                   // G49     
-  // G1    X,Y,Z                   // G53          
-  // G2    X,Y,Z,R,I,J,K           // G54  
-  // G3    X,Y,Z,R,I,J,K           // G55  
-  // G4    P                       // G56  
-  // G10   L,P,X,Y,Z,R,I,J,Q       // G57      
-  // G17                           // G58  
+  // G0    X,Y,Z                   // G49
+  // G1    X,Y,Z                   // G53
+  // G2    X,Y,Z,R,I,J,K           // G54
+  // G3    X,Y,Z,R,I,J,K           // G55
+  // G4    P                       // G56
+  // G10   L,P,X,Y,Z,R,I,J,Q       // G57
+  // G17                           // G58
   // G18                           // G59
   // G19                           // G61
-  // G20                           // G64  
-  // G21                           // G90  
-  // G28   X,Y,Z                   // G91   
-  // G30   X,Y,Z,P,H,S             // G92   X,Y,Z  
-  // G40                           // G93        
-  // G41   D                       // G94    
-  // G42   D                       // G98   
-  // G43   H                       // G99  
-CWS.GLine.prototype.separeteCommands = function(line) 
+  // G20                           // G64
+  // G21                           // G90
+  // G28   X,Y,Z                   // G91
+  // G30   X,Y,Z,P,H,S             // G92   X,Y,Z
+  // G40                           // G93
+  // G41   D                       // G94
+  // G42   D                       // G98
+  // G43   H                       // G99
+CWS.GLine.prototype.separeteCommands = function(line)
   {
     // Get all the parameters
     var parametersList={};
     var commandsUnsorted=[]
-    for (var i = 0; i < line.length; i++) 
+    for (var i = 0; i < line.length; i++)
     {
       elem=line[i];
       if (elem[0]=='g' || elem[0]=='m' || elem[0]=='f' || elem[0]=='s')
@@ -184,7 +188,7 @@ CWS.GLine.prototype.separeteCommands = function(line)
     };
     // Get all the commands
     ht=Array(24);
-    for (var i = 0; i < commandsUnsorted.length; i++) 
+    for (var i = 0; i < commandsUnsorted.length; i++)
     {
       var elem=commandsUnsorted[i];
       var c = new CWS.Command();
@@ -219,7 +223,7 @@ CWS.GLine.prototype.separeteCommands = function(line)
             case 41: case 42:
               if (!this.checkParameter(parametersList,c,'d'))
                 throw new CWS.ErrorParser(this.lineNumber,"Wrong G"+elem[1]+". Missing word D",this.rawLine);
-            case 40: 
+            case 40:
               c.mgroup=7;
               pos=11;
               break;
@@ -362,8 +366,9 @@ CWS.GLine.prototype.separeteCommands = function(line)
       temp = this.checkParameter(parametersList,c,'x')||temp;
       temp = this.checkParameter(parametersList,c,'y')||temp;
       temp = this.checkParameter(parametersList,c,'z')||temp;
-      this.checkParameter(parametersList,c,'a');
-      this.checkParameter(parametersList,c,'e');
+      temp = this.checkParameter(parametersList,c,'e')||temp;
+      temp = this.checkParameter(parametersList,c,'f')||temp;
+      temp = this.checkParameter(parametersList,c,'a')||temp;
       if (this.parser.activeCommand==2 || this.parser.activeCommand==3)
       {
         temp2 = false;
@@ -377,16 +382,19 @@ CWS.GLine.prototype.separeteCommands = function(line)
         c.ctype = 'g';
         c.mgroup = 1;
         c.number = this.parser.activeCommand;
-        // If G93 is active every line with G1,G2,G3 should have the F word 
+        // If G93 is active every line with G1,G2,G3 should have the F word
         if (this.parser.feedMode==93 && c.number!=0 && ht[1]===undefined)
           throw new CWS.ErrorParser(this.lineNumber,"G93 is active but F word is missing",this.rawLine);
         ht[21]=c;
       }
       else
+      {
         ht[21]=undefined;
+        throw new CWS.ErrorParser(this.lineNumber,`G${this.parser.activeCommand} incorrect parameters`,this.rawLine);
+      }
     }
     // Fill the commands vector with the commands already sorted
-    for (var i = 0; i < ht.length; i++) 
+    for (var i = 0; i < ht.length; i++)
     {
       if (ht[i]!==undefined)
       {
@@ -396,8 +404,8 @@ CWS.GLine.prototype.separeteCommands = function(line)
     }
   };
 // Check whether the parameter exists.
-// If it exists then it will be added to the command and deleted from the parameters list. Otherwise it returns false 
-CWS.GLine.prototype.checkParameter = function(parametersList,c,parm) 
+// If it exists then it will be added to the command and deleted from the parameters list. Otherwise it returns false
+CWS.GLine.prototype.checkParameter = function(parametersList,c,parm)
   {
     if (parm in parametersList)
     {
@@ -416,7 +424,7 @@ CWS.GLine.prototype.checkParameter = function(parametersList,c,parm)
 // A Command can be any function that changes the state of the machine
 // To be more specific a command is the smallest instruction that will be passed to the simulator.
 // It contains the type and other data like parameters.
-CWS.Command = function () 
+CWS.Command = function ()
   {
     // g,m,f,s
     this.ctype = null;
@@ -425,12 +433,12 @@ CWS.Command = function ()
     // g or m number
     this.number = null;
     // Parameters
-    this.param = {ijk:{},xyz:{}}; 
+    this.param = {ijk:{},xyz:{}};
     // A pointer to the line
     this.line = null;
   }
 // Creates an error object for the parser
-CWS.ErrorParser = function (line,message,data) 
+CWS.ErrorParser = function (line,message,data)
   {
     this.line = line;
     this.message = message;

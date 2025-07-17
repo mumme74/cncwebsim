@@ -13,32 +13,32 @@ var interpreter;
 var machineType;
 
 
-function init (header) 
+function init (header)
 {
 	parser 		= new CWS.Parser();
 	interpreter = new CWS.Interpreter(header.machine);
 }
 
-function runCode (data) 
+function runCode (data)
 {
 	var code = data.code;
 	var errList = [];
-	try 
+	try
 	{
-		parser.parseCode(code);	
-	} catch(e) 
+		parser.parseCode(code, errList);
+	} catch(e)
 	{
-		errList.push(String(e));
+		errList.push(e);
 	}
 	while(cmd=parser.getCommand())
 	{
-		try 
+		try
 		{
 			interpreter.runCommand(cmd);
-		} 
-		catch(e) 
+		}
+		catch(e)
 		{
-			errList.push(String(e));
+			errList.push(e);
 		}
 	}
 
@@ -47,7 +47,7 @@ function runCode (data)
 	var color = new Float32Array( interpreter.outputCommands.length*2);
 	var i=0;
 	var c=0;
-	
+
 	while (i<l)
 	{
 		var cmd=interpreter.getCommand();
@@ -69,7 +69,7 @@ function runCode (data)
 	return {positions:positions,color:color,error:errList};
 }
 
-onmessage = function (ev) 
+onmessage = function (ev)
 {
 	init(ev.data.header);
 	var result;
