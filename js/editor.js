@@ -77,6 +77,8 @@ CWS.CodeEditor.prototype.setCurrentLine = function(lineNr)
 			if (obj.clazz==="ace_step")
 				this.editor.getSession().removeMarker(key);
 
-		if (lineNr > -1)
+		if (lineNr > -1) {
 			this.editor.getSession().highlightLines(lineNr);
+			this.editor.scrollToLine(lineNr)
+		}
 	}
