@@ -26,20 +26,10 @@ CWS.CodeEditor = function ()
 
 		this.editor.on("guttermousedown", (e) => {
 			const target = e.domEvent.target;
-			if (!target.classList.contains("ace_gutter-cell") ||
-				!this.editor.isFocused()
-			)
+			if (!target.classList.contains("ace_gutter-cell"))
 				return;
 
 			const row = e.getDocumentPosition().row;
-
-			/*console.log(e.clientX > 25 + target.getBoundingClientRect().left);
-
-			console.log(e.clientX, 25 + target.getBoundingClientRect().left);
-
-			if (e.clientX > 50 + target.getBoundingClientRect().left)
-				return;*/
-
 			const breakpoints = e.editor.session.getBreakpoints(row, 0);
 			if(breakpoints[row] === undefined)
 				e.editor.session.setBreakpoint(row);

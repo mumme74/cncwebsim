@@ -329,7 +329,8 @@ CWS.Controller.prototype.windowResize = function()
     {
         var maincanvasdiv = document.getElementById("canvasContainer");
         this.controls.handleResize();
-        this.renderer.setSize(maincanvasdiv.offsetWidth,maincanvasdiv.offsetHeight);
+        this.renderer.setSize(maincanvasdiv.offsetWidth,
+                              maincanvasdiv.offsetHeight);
     };
 
 CWS.Controller.prototype.render = function(forceUpdate)
@@ -408,7 +409,9 @@ CWS.Controller.prototype.updateWorkpieceDraw = function()
         this.update3D();
 
         if (this.machine.mtype==="3D Printer" && boundingSphere===false)
-            this.renderer.lookAt3DPrinter(this.machine.boundingSphere.center,this.machine.boundingSphere.radius);
+            this.renderer.lookAt3DPrinter(
+                this.machine.boundingSphere.center,
+                this.machine.boundingSphere.radius);
 
         if (this.machine.motionData.error.length!==0)
         {

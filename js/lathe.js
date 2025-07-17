@@ -23,11 +23,11 @@ CWS.Lathe.prototype = Object.create( CWS.Machine.prototype );
 
 CWS.Lathe.prototype.constructor = CWS.Lathe;
 
-CWS.Lathe.prototype.initWebGL = function () 
+CWS.Lathe.prototype.initWebGL = function ()
 	{
 		// For 3D drawing
 		this.canvas =  document.createElement('canvas');
-		var attributes = 
+		var attributes =
 		{
 			alpha: true,
 			depth: true,
@@ -37,7 +37,7 @@ CWS.Lathe.prototype.initWebGL = function ()
 			preserveDrawingBuffer: true
 		};
 		this.gl=this.canvas.getContext( 'webgl', attributes ) || this.canvas.getContext( 'experimental-webgl', attributes);
-		if ( this.gl === null ) 
+		if ( this.gl === null )
 			throw 'Error creating WebGL context.';
 	    this.gl.enable(this.gl.DEPTH_TEST);
 
@@ -73,7 +73,7 @@ CWS.Lathe.prototype.updateTool = function ()
         this.create3DWorkpiece();
     }
 
-CWS.Lathe.prototype.setRendererResolution = function (renderResolution) 
+CWS.Lathe.prototype.setRendererResolution = function (renderResolution)
 	{
 		this.renderResolution = renderResolution || this.renderResolution;
 		this.pixels = new Uint8Array(this.renderResolution*4);
@@ -85,7 +85,7 @@ CWS.Lathe.prototype.setRendererResolution = function (renderResolution)
 	    this.gl.viewport(0, 0, this.gl.viewportWidth, this.gl.viewportHeight);
 	};
 
-CWS.Lathe.prototype.initGeometry2D = function () 
+CWS.Lathe.prototype.initGeometry2D = function ()
 	{
 		var geometry = new THREE.BufferGeometry();
 		geometry.boundingSphere = new THREE.Sphere( new THREE.Vector3(0,0,0),99999);
@@ -99,10 +99,10 @@ CWS.Lathe.prototype.initGeometry2D = function ()
 		mesh.rotation.x = Math.PI/2;
 		mesh.rotation.y = Math.PI/2;
 		mesh.position.x = -this.workpiece.z/2;
-        this.mesh2D = mesh; 
+        this.mesh2D = mesh;
     }
 
-CWS.Lathe.prototype.initGeometry3D = function () 
+CWS.Lathe.prototype.initGeometry3D = function ()
 	{
 		this.material3D.shading = THREE.SmoothShading;
 		var segments = this.segments;
@@ -115,7 +115,7 @@ CWS.Lathe.prototype.initGeometry3D = function ()
 		var vertices = new Float32Array( SlicesX*segments*3 );
         var uvs = new Float32Array( vertices.length );
         var index = new Uint32Array( (SlicesX-1)*(segments-1)*6 );
-        
+
         // Pre calculate sin and cos
         var sinTable = new Float32Array( segments );
         var cosTable = new Float32Array( segments );
@@ -128,22 +128,22 @@ CWS.Lathe.prototype.initGeometry3D = function ()
         }
         this.cosTable = cosTable;
         this.sinTable = sinTable;
-    
+
         // Create the index vector
         var ii=0;
         var ifa=0;
-        for ( var ix = 0; ix < SlicesX-1; ix++) 
-		{    
+        for ( var ix = 0; ix < SlicesX-1; ix++)
+		{
             var ir;
             for (ir=0; ir<segments-2; ir++)
 			{
                 var i=ix*segments+ir;
-                
+
                 var iv=ii;
 				index[ii++] = i+1+segments;
 				index[ii++] = i+1;
 				index[ii++] = i;
-                
+
 				index[ii++] = i;
 				index[ii++] = i+segments;;
                 index[ii++] = i+1+segments;
@@ -154,14 +154,14 @@ CWS.Lathe.prototype.initGeometry3D = function ()
             index[ii++] = i1+segments;
             index[ii++] = i1;
             index[ii++] = i2+1;
-              
+
             index[ii++] = i2+1;
             index[ii++] = i2+segments+1;
             index[ii++] = i1+segments;
         }
         // Generate the UVs
         var iv=0;
-		for ( var ix = 0; ix < SlicesX; ix++) 
+		for ( var ix = 0; ix < SlicesX; ix++)
 		{
 			var r=this.dataLevel1[ix];
 			for (var ir=0; ir<segments; ir++)
@@ -171,7 +171,7 @@ CWS.Lathe.prototype.initGeometry3D = function ()
 				uvs[iv++] = cosTable[ir]*0.5+0.5;
 			}
 		}
-    
+
         geometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
 		geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
 		geometry.setIndex( new THREE.BufferAttribute( index, 1 ) );
@@ -180,11 +180,11 @@ CWS.Lathe.prototype.initGeometry3D = function ()
         var mesh = new THREE.Mesh( geometry, this.material3D);
 		mesh.position.x = -this.workpiece.z/2;
 		mesh.name="3DWorkpiece";
-    
+
         this.mesh3D = mesh;
     }
 
-CWS.Lathe.prototype.generateLatheGeometry = function () 
+CWS.Lathe.prototype.generateLatheGeometry = function ()
 	{
         var segments = this.segments;
 		var SlicesX = this.renderResolution;
@@ -201,7 +201,7 @@ CWS.Lathe.prototype.generateLatheGeometry = function ()
             vertices[iv++] = 0;
             vertices[iv++] = 0;
         }
-		for ( var ix = 0; ix < SlicesX; ix++,z+=seg) 
+		for ( var ix = 0; ix < SlicesX; ix++,z+=seg)
 		{
 			var r=this.dataLevel1[ix];
 			for (var ir=0; ir<segments; ir++)
@@ -224,11 +224,11 @@ CWS.Lathe.prototype.generateLatheGeometry = function ()
 		this.mesh3D.geometry.computeVertexNormals();
 	};
 
-CWS.Lathe.prototype.create2DWorkpieceLimits = function () 
+CWS.Lathe.prototype.create2DWorkpieceLimits = function ()
 	{
 		if (this.meshes.meshWorkpiece === true)
 			return;
-		
+
 		var R=this.workpiece.x/2;
 		var L=this.workpiece.z;
 
@@ -242,19 +242,19 @@ CWS.Lathe.prototype.create2DWorkpieceLimits = function ()
 		geometry.computeLineDistances();
 
 		var material = new THREE.LineDashedMaterial( { color: 0x000000, dashSize: 2, gapSize: 1 } );
-		
+
 		var mesh = new THREE.Line( geometry, material );
 		mesh.name="2DWorkpieceDash";
 		mesh.rotation.x=Math.PI/2;
 		mesh.rotation.y=Math.PI/2;
 		mesh.position.x = -this.workpiece.z/2;
         mesh.visible = true;
-        
+
         this.meshes.meshWorkpiece = true;
 		this.meshWorkpiece = mesh;
 	};
 
-CWS.Lathe.prototype._create3DWorkpiece = function () 
+CWS.Lathe.prototype._create3DWorkpiece = function ()
 	{
 		var radius = this.workpiece.x/2.0;
 		this.gl.useProgram(this.shaderProgram1);
@@ -285,18 +285,18 @@ CWS.Lathe.prototype._create3DWorkpiece = function ()
 		// Read the rendered data and calculate the values
 		this.gl.readPixels(0, 0, this.renderResolution, 1,this.gl.RGBA,this.gl.UNSIGNED_BYTE, this.pixels);
 		var vDist = radius/65535.0;
-		
+
 		var dataview = new DataView( this.pixels.buffer, 0 );
 		var l=this.pixels.length;
 		var i = 0;
-		for (i=0; i < l; i+=4) 
+		for (i=0; i < l; i+=4)
 		{
 			var d = dataview.getUint16(i)*vDist;
 			if (d===0)
 				break;
 			this.dataLevel1[i/4]=d;
 		};
-		for (i=i; i < l; i+=4) 
+		for (i=i; i < l; i+=4)
 		{
 			this.dataLevel1[i/4]=0;
 		};
@@ -305,7 +305,7 @@ CWS.Lathe.prototype._create3DWorkpiece = function ()
 		// this.dataLevel2 = new Float32Array(this.renderResolution);
 		// this.dataLevel2[0]=this.dataLevel1[0];
 		// this.dataLevel2[l/4-1]=this.dataLevel1[l/4-1];
-		// for (i=2; i < l/4-2; i++) 
+		// for (i=2; i < l/4-2; i++)
 		// {
 		// 	this.dataLevel2[i]=(this.dataLevel1[i-2]+this.dataLevel1[i-1]+this.dataLevel1[i]+this.dataLevel1[i+1]+this.dataLevel1[i+2])/5;
 		// };
@@ -321,14 +321,14 @@ CWS.Lathe.prototype._create3DWorkpiece = function ()
 		{}
 		else
 		{
-			for (i=segNbr; i < l/4; i++) 
+			for (i=segNbr; i < l/4; i++)
 			{
 				for (j=0; j<segNbr; j++)
 				{
 					this.dataLevel2[i]=Math.min.apply(Math, this.dataLevel1.subarray(i-j,i));
 				}
 			};
-			for (i=1; i < segNbr; i++) 
+			for (i=1; i < segNbr; i++)
 			{
 				for (j=0; j<segNbr; j++)
 				{
@@ -337,7 +337,11 @@ CWS.Lathe.prototype._create3DWorkpiece = function ()
 			};
 			this.dataLevel1 = this.dataLevel2;
 		}
-        
+
         this.generateLatheGeometry();
+
+		const attributes = this.mesh3D.geometry.attributes;
+        attributes.position.needsUpdate = true;
+        attributes.uv.needsUpdate = true;
         this.mesh3D.position.x = -this.workpiece.z/2;
 	};

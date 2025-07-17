@@ -75,18 +75,29 @@ class MotionInterp {
 		            atLine: -1, state: this.state};
 		}
 
-		const cmd = this.interpreter.getCommand();
-		this.#calcCmd(cmd);
+		const oldPos = this.pos,
+			  int = this.interpreter,
+		      lineNr = this.interpreter.outputCommands[0].cmd.line.lineNumber;
+		let cmd;
+		while (cmd = int.getCommand()) {
+			this.#calcCmd(cmd);
+
+			// continue until we cleared this line.
+			if (!int.outputCommands.length ||
+				int.outputCommands[0].cmd.line.lineNumber !== lineNr
+			)
+				break;
+			this.pos++;
+		}
 
 		this.state = this.interpreter.outputCommands.length ?
 						MotionInterp.States.Halted : MotionInterp.States.Idle;
 
 		const p = this.pos * 6, c = this.pos * 2;
-		const res = {positions:this.positions.slice(p, p+6),
-			         color:this.color.slice(c, c +2),
+		const res = {positions:this.positions.slice(oldPos * 6, p+6),
+			         color:this.color.slice(oldPos*2, c +2),
 			         error:this.errList, atLine: cmd.cmd.line.lineNumber-1,
 					 state: this.state};
-		this.pos++;
 		return res;
 	}
 
@@ -118,17 +129,26 @@ class MotionInterp {
 	}
 
 	#calcAllCmds(end, useBrk) {
-		let lineNr = -1;
+		let lineNr = -1, peekLn = -1;
+		const int = this.interpreter;
 		for (; this.pos < end; ++this.pos) {
 			const cmd = this.interpreter.getCommand();
+			// only break on this commands that have onter line
+			// G02-G03 produces many cmds for the same line
 			lineNr = cmd.cmd.line.lineNumber-1;
-			if (useBrk, this.breakPnts.indexOf(lineNr) !== -1) {
+			peekLn = int.outputCommands.length ?
+				int.outputCommands[0].cmd.line.lineNumber : -1;
+			if (useBrk &&
+				this.breakPnts.indexOf(lineNr) !== -1 &&
+				peekLn !== lineNr)
+			{
 				this.state = MotionInterp.States.Halted;
 				break;
 			}
 			this.#calcCmd(cmd);
 		}
-		return {positions:this.positions, color:this.color,
+		return {positions:this.positions.slice(0, this.pos*6),
+				color:this.color.slice(0, this.pos*2)	,
 			    error:this.errList, atLine: lineNr,
 				state: this.state};
 	}

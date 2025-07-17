@@ -525,7 +525,17 @@ CWS.Interpreter.prototype.g21 = function (cmd)
 // The parameter values are absolute machine coordinates in the native machine units
 CWS.Interpreter.prototype.g28 = function (cmd)
 	{
-	// body...
+		this.coordinatesToAbsolute(cmd);
+		var l={	x0:this.position.x,x1:cmd.param.xyz.x,
+				y0:this.position.y,y1:cmd.param.xyz.y,
+				z0:this.position.z,z1:cmd.param.xyz.z}
+		this.position.x=l.x1;
+		this.position.y=l.y1;
+		this.position.z=l.z1;
+
+		l.ctype=0;
+		l.cmd=cmd;
+		this.outputCommands.push(l);
 	};
 // Go to Predefined Position
 // The parameter values are absolute machine coordinates in the native machine units
