@@ -115,7 +115,7 @@ CWS.GLine.prototype.splitLine = function(line)
       result.push([m[1],m[2]]);
     }
     // test for invalid parameter
-    if (/(?:[a-z]{2,}|[a-z][-+]*\d+\.*\d* \d)/.test(line))
+    if (!line.startsWith("$") && /(?:[a-z]{2,}|[a-z][-+]*\d+\.*\d* \d)/.test(line))
         throw new CWS.ErrorParser(this.lineNumber,`incorrect parameters`,this.rawLine);
     return result;
   };
