@@ -42,7 +42,7 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
         });
         this.editor.subscribeToCodeChanged(function (code,ev)
         {
-            controller.runInterpreter();
+            controller.interpreterRun();
         });
         // Add the renderer to the container
         document.getElementById("canvasContainer").appendChild(renderer.domElement);
@@ -183,7 +183,7 @@ CWS.Controller.prototype.openMachine = function(machine)
 		this.storage.machine = CWS.Project.createDefaultMachine(machine);
         this.storage.workpiece = CWS.Project.createDefaultWorkpiece(machine);
         this.loadMachine();
-        this.runInterpreter();
+        this.interpreterRun();
 	};
 
 CWS.Controller.prototype.workpieceDimensions = function(dimensions)
@@ -236,7 +236,7 @@ CWS.Controller.prototype.setWorkpieceDimensions = function(dimensions)
         }
         else if (this.machine.mtype=="3D Printer")
         {
-            this.runInterpreter();
+            this.interpreterRun();
         }
         this.updateWireframe();
 	};
@@ -363,16 +363,40 @@ CWS.Controller.prototype.save = function(forceSave)
         }
     };
 
-CWS.Controller.prototype.runInterpreter = function(forceRun)
+CWS.Controller.prototype._initInterpreter = function()
+    {
+        const code = this.editor.getCode();
+        const breakPnts = Object.keys(
+            this.editor.editor.getSession().getBreakpoints()).map(v=>+v);
+        this.motion.setData({ header:this.storage.header, code:code});
+        this.motion.setBreakpoints(breakPnts);
+    }
+
+CWS.Controller.prototype.interpreterRun = function(forceRun)
     {
         if (this.autoRun===false && forceRun!==true)
             return;
-        var code = this.editor.getCode();
-        this.motion.setData({ header:this.storage.header,
-                                code:code});
+        this._initInterpreter();
         this.displayMessage("Running G Code");
         this.motion.run();
     };
+
+CWS.Controller.prototype.interpreterContinue = function()
+    {
+        this._initInterpreter();
+        this.displayMessage("Debugging G Code");
+        this.motion.contin();
+    }
+
+CWS.Controller.prototype.interpreterNext = function()
+    {
+        this.motion.next();
+    }
+
+CWS.Controller.prototype.interpreterStepOver = function()
+    {
+        this.motion.stepOver();
+    }
 
 CWS.Controller.prototype.updateWorkpieceDraw = function()
     {

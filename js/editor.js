@@ -2,10 +2,10 @@
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
  */
 
-CWS.CodeEditor = function () 
+CWS.CodeEditor = function ()
 	{
 		var date=new Date();
-		
+
 		this.editor = new ace.edit("editor");
 		this.editor.$blockScrolling = Infinity;
 		this.editor.setTheme("ace/theme/monokai");
@@ -24,35 +24,69 @@ CWS.CodeEditor = function ()
 			context.codeChanged(e);
 		});
 
+		this.editor.on("guttermousedown", (e) => {
+			const target = e.domEvent.target;
+			if (!target.classList.contains("ace_gutter-cell") ||
+				!this.editor.isFocused()
+			)
+				return;
+
+			const row = e.getDocumentPosition().row;
+
+			/*console.log(e.clientX > 25 + target.getBoundingClientRect().left);
+
+			console.log(e.clientX, 25 + target.getBoundingClientRect().left);
+
+			if (e.clientX > 50 + target.getBoundingClientRect().left)
+				return;*/
+
+			const breakpoints = e.editor.session.getBreakpoints(row, 0);
+			if(breakpoints[row] === undefined)
+				e.editor.session.setBreakpoint(row);
+			else
+				e.editor.session.clearBreakpoint(row);
+			e.stop();
+		});
+
 	};
 
 CWS.CodeEditor.prototype.constructor = CWS.CodeEditor;
 
-CWS.CodeEditor.prototype.codeChanged = function (ev) 
+CWS.CodeEditor.prototype.codeChanged = function (ev)
 	{
-		var code = this.getCode();
-		for (var i = 0; i < this.codeChangedSubscribers.length; i++) 
-		{
-			this.codeChangedSubscribers[i](code,ev);
-		}
+		const code = this.getCode();
+		const breakPnts = Object.keys(this.editor.getSession().getBreakpoints());
+		for (const cb of this.codeChangedSubscribers)
+			cb(code, breakPnts, ev);
 	};
 
-CWS.CodeEditor.prototype.subscribeToCodeChanged = function (func) 
+CWS.CodeEditor.prototype.subscribeToCodeChanged = function (func)
 	{
 		this.codeChangedSubscribers.push(func);
 	};
 
-CWS.CodeEditor.prototype.getCode = function() 
+CWS.CodeEditor.prototype.getCode = function()
 	{
 		return this.editor.getValue();
 	};
 
-CWS.CodeEditor.prototype.setCode = function(code) 
+CWS.CodeEditor.prototype.setCode = function(code)
 	{
 		this.editor.setValue(code,-1);
 	};
 
-CWS.CodeEditor.prototype.readOnly = function(ro) 
+CWS.CodeEditor.prototype.readOnly = function(ro)
 	{
 		this.editor.setReadOnly(ro);
 	};
+
+CWS.CodeEditor.prototype.setCurrentLine = function(lineNr)
+	{
+		const markers = this.editor.getSession().getMarkers();
+		for (const [key, obj] of Object.entries(markers))
+			if (obj.clazz==="ace_step")
+				this.editor.getSession().removeMarker(key);
+
+		if (lineNr > -1)
+			this.editor.getSession().highlightLines(lineNr);
+	}
