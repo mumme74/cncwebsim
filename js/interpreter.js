@@ -111,9 +111,97 @@ CWS.Interpreter.prototype.m9999  = function (prgCmd)
 		// body...
 	};
 
+CWS.Interpreter.prototype.parameterVlu = function (name)
+	{
+		if (name in this.parameters)
+			return this.parameters[name];
+		console.error(`Using ${name} uninitialised`);
+		return 0;
+	};
+
+CWS.Interpreter.prototype.exprVlu = function (expr, cmd)
+	{
+		if (!isNaN(expr))
+			return expr;
+		if (typeof expr === 'string')
+			return this.parameterVlu(expr);
+		// need to run calculation
+		const getVlu = (exp)=>{
+			if (Array.isArray(exp))
+				return calculate(exp);
+			if (typeof exp === 'string')
+				return this.parameterVlu(exp);
+			return exp;
+		}
+		const calculate = (subExpr)=>{
+			// recursivly figure out left part
+			const left = Array.isArray(subExpr[1]) ?
+				calculate(subExpr[1]) : getVlu(subExpr[1]);
+			const right = Array.isArray(subExpr[2]) ?
+				calculate(subExpr[2]) : getVlu(subExpr[2]);
+			switch (subExpr[0]) {
+			case '**':  return Math.pow(left, right);
+			case '*':   return left * right;
+			case '+':   return left + right;
+			case '-':   return left - right;
+			case 'eq':  return left === right;
+			case 'ne':  return left !== right;
+			case 'gt':  return left > right;
+			case 'lt':  return left < right;
+			case 'ge':  return left >= right;
+			case 'le':  return left <= right;
+			case 'and': return left && right;
+			case 'or':  return left || right;
+			case 'xor': return (left && !right) || (!left && right);
+			case '/':
+				if (right === 0)
+					throw new CWS.ErrorParser(cmd.lineNumber,
+						`Error: division by zero ${ĺeft} / ${right}`,
+						{left, right});
+				return left / right;
+			case 'mod':
+				if (right === 0)
+					throw new CWS.ErrorParser(cmd.lineNumber,
+						`Error: division by zero ${ĺeft} MOD ${right}`,
+						{left, right});
+				return left % right;
+			}
+		}
+
+		return calculate(expr);
+	};
+
+CWS.Interpreter.prototype.isObject = function (obj)
+	{
+		return typeof obj === 'object' && obj !== null && ! Array.isArray(obj);
+	};
+
+// evaluate all expressions in cmd params
+CWS.Interpreter.prototype.evalCmdExprs = function (cmd)
+	{
+		const retObj = {};
+		const ignore = ['line'];
+		const doObj = (obj, ret)=>{
+			for (const [key, vlu] of Object.entries(obj)) {
+				if (ignore.indexOf(key) !== -1)
+					ret[key] = vlu;
+				else if (this.isObject(vlu)) {
+					ret[key] = {};
+					doObj(vlu, ret[key]);
+				} else if (Array.isArray(vlu))
+					ret[key] = this.exprVlu(vlu, cmd);
+				else
+					ret[key] = vlu;
+			}
+		}
+		doObj(cmd, retObj);
+		return retObj;
+	};
+
 CWS.Interpreter.prototype.coordinatesToAbsolute  = function (prgCmd)
 	{
-		const cmd = {...prgCmd}; // take a copy
+		const cmd = this.evalCmdExprs(prgCmd); // also takes a copy
+
 		if (this.settings.machine_postion_g53==true)
 		{
 			cmd.param.xyz.x = cmd.param.xyz.x===undefined?this.position.x:cmd.param.xyz.x*this.modal.units;
@@ -140,24 +228,27 @@ CWS.Interpreter.prototype.coordinatesToAbsolute  = function (prgCmd)
 
 CWS.Interpreter.prototype.f0  = function (prgCmd)
 	{
-	if (this.modal.feed_rate_mode==93)
-		this.settings.feed_rate93=prgCmd.param['f'];
-	else
-		this.settings.feed_rate=prgCmd.param['f'];
-	return true;
+		const feed = this.exprVlu(prgCmd.param['f'], prgCmd);
+		if (this.modal.feed_rate_mode==93)
+			this.settings.feed_rate93=feed;
+		else
+			this.settings.feed_rate=feed;
+		return true;
 	};
 // For 3D printers S word can be time,temperature,voltage etc.
 // For the other machines S is the spindle speed and it cannot be negative
 CWS.Interpreter.prototype.s0  = function (prgCmd)
 	{
-	if (this.machineType!='3D Printer')
-	{
-		if (prgCmd.param.s<0)
-			throw new CWS.ErrorParser(prgCmd.line.lineNumber,"Wrong S number. S cannot be a negative number",prgCmd.line.rawLine);
-		else
-			this.spindle_speed=prgCmd.param.s;
-	};
-	return true;
+		if (this.machineType!='3D Printer') {
+			const speed = this.exprVlu(prgCmd.s, prgCmd);
+			if (speed < 0)
+				throw new CWS.ErrorParser(prgCmd.line.lineNumber,
+					"Wrong S number. S cannot be a negative number",
+					prgCmd.line.rawLine);
+			else
+				this.spindle_speed=speed;
+		};
+		return true;
 	};
 
 CWS.Interpreter.prototype.move3dPrinter  = function (prgCmd)
@@ -516,8 +607,9 @@ CWS.Interpreter.prototype.g91 = function (prgCmd)
 
 CWS.Interpreter.prototype.g92 = function (prgCmd)
 	{
-	for (var k in prgCmd.param.xyz)
-		this.settings.coord_offset[k]=prgCmd.param.xyz[k]*this.modal.units;
+		const cmd = this.evalCmdExprs(prgCmd);
+		for (var k in cmd.param.xyz)
+			this.settings.coord_offset[k]=cmd.param.xyz[k]*this.modal.units;
 	};
 
 CWS.Interpreter.prototype.g93 = function (prgCmd)
@@ -636,8 +728,8 @@ CWS.Interpreter.prototype.m109 = function (prgCmd)
 
 CWS.Interpreter.prototype.parameterAssign = function(prgCmd)
 	{
-		this.parameters[prgCmd.number] = prgCmd.param['vlu'];
-		console.log(prgCmd);
+		this.parameters[prgCmd.number] = this.exprVlu(prgCmd.param['vlu']);
+		console.log("Assigning ", prgCmd.number, prgCmd);
 	}
 
 // Creates an error object for the parser
@@ -650,5 +742,5 @@ CWS.ErrorParser = function (line,message,data)
 // Returns a string form of the error.
 CWS.ErrorParser.prototype.toString = function ()
   {
-    return "Error on line: "+this.line;
+    return `Error: ${message} on line: ${this.line}`;
   };

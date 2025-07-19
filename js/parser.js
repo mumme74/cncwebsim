@@ -106,10 +106,12 @@ CWS.GLine.prototype.parseLine = function(line)
       let j = i;
       for (; j < line.length && line[j] <= ' '; ++j)
         ;
-      return line[j]
+      if (i === j) j++;
+      if (j === line.length) return '\0';
+      return line[j];
     };
 
-    // increment linepntr til next non WS char.
+    // increment linepntr until next non WS char.
     // return true if more char to read on line.
     const eatWs = ()=>{
       for (; i < line.length && line[i] <= ' '; ++i)
@@ -140,11 +142,14 @@ CWS.GLine.prototype.parseLine = function(line)
       const parameterParts = [line[i++]];
       if (line[i] === '<') { // allow <named variable> aka linux cnc
         parameterParts.push(line[i++]);
-        for (; i < line.length && line[i] !== '>'; ++i)
+        for (; i < line.length && line[i] !== '>'; ++i) {
           if (line[i] === '<')
             this.throwError(`Unexpected '${line[i]}' at col: ${i}`);
+          parameterParts.push(line[i]);
+        }
         if (i === line.length || line[i] !== '>')
           this.throwError(`Expected an '>' at col: ${i}`);
+        parameterParts.push(line[i++])
       } else {
         // ordinary #1...999 parameters
         for (; i < line.length; ++i) {
@@ -180,14 +185,16 @@ CWS.GLine.prototype.parseLine = function(line)
       switch (line[i]) {
       case '*':
         if (peek() === '*') { ++i; return ['**',0]; }
-        else return ['*',1];
-      case '/': return ['/', 1];
+        i++; return ['*',1];
+      case '/':
+        i++; return ['/', 1];
       case 'm':
         if (i < line.length-2 && line.substring(i,i+2) === 'mod') {
            i+=2; return ['mod',1];
         }
         this.throwError(`Unexpected ${line.substring(i,i+2)} at col: ${i}`);
       case '+': case'-':
+        i++;
         return [line[i], 2];
       default:
         // 2char long operator
@@ -265,11 +272,17 @@ CWS.GLine.prototype.parseLine = function(line)
       // TODO support expressions
       case ' ': case '\t': case '\b': case '\r':
         break;
-      case ';': // comment rest of line
+      case ';': // comment rest of line.
+        vlu = [];
+        for (; i < line.length; ++i)
+          vlu.push(line[i]);
+        this.coments.push(vlu.join(''))
         return result;
       case '(': // comment, part of line
-        for (; i < line.length && line[i] !== ')'; ++i)
-          ;
+        vlu = [];
+        for (i++; i < line.length && line[i] !== ')'; ++i)
+          vlu.push(line[i]);
+        this.coments.push(vlu.join(''));
         i++;
         break;
       case '[':
@@ -583,11 +596,11 @@ CWS.GLine.prototype.separeteCommands = function(line)
         // If G93 is active every line with G1,G2,G3 should have the F word
         if (this.parser.feedMode==93 && c.number!=0 && ht[1]===undefined)
           this.throwError("G93 is active but F word is missing");
-        ht[21]=c;
+        ht[22]=c;
       }
       else
       {
-        ht[21]=undefined;
+        ht[22]=undefined;
         this.throwError(`G${this.parser.activeCommand} incorrect parameters`);
       }
     }
