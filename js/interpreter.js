@@ -51,6 +51,7 @@ CWS.Interpreter = function (machine)
 		this.position = this.settings.pos28;  // Where the interpreter considers the tool to be at this point in the code
 
 		this.outputCommands = []; 		// {time:t,comand:cdata}
+		this.parameters = {};
 
 		// Coordinate system is P0
 		this.settings.coord_system=this.coordinateSystemTable[0];
@@ -77,8 +78,11 @@ CWS.Interpreter = function (machine)
 
 CWS.Interpreter.prototype.runCommand = function (prgCmd)
 	{
-		if (!this.stopRunning)
-			return this[prgCmd.ctype+prgCmd.number](prgCmd);
+		if (this.stopRunning)
+			return;
+		else if (prgCmd.ctype === '=')
+			return this.parameterAssign(prgCmd);
+		return this[prgCmd.ctype+prgCmd.number](prgCmd);
 	};
 
 CWS.Interpreter.prototype.getCommand = function ()
@@ -628,6 +632,12 @@ CWS.Interpreter.prototype.m104 = function (prgCmd)
 CWS.Interpreter.prototype.m109 = function (prgCmd)
 	{
 	// body...
+	}
+
+CWS.Interpreter.prototype.parameterAssign = function(prgCmd)
+	{
+		this.parameters[prgCmd.number] = prgCmd.param['vlu'];
+		console.log(prgCmd);
 	}
 
 // Creates an error object for the parser
