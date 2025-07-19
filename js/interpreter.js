@@ -2,10 +2,11 @@
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
  */
 
-CWS.Interpreter = function (machine)
+CWS.Interpreter = function (machine, parser)
 	{
 		// Mill - Mill, Lathe - Lathe, 3D Printer - Printer
 		this.machineType = machine.mtype;
+		this.parser = parser;
 		this.modal =
 		{
 			motion:0,                  // {G0,G1,G2,G3,G38.2,G80}
@@ -51,7 +52,10 @@ CWS.Interpreter = function (machine)
 		this.position = this.settings.pos28;  // Where the interpreter considers the tool to be at this point in the code
 
 		this.outputCommands = []; 		// {time:t,comand:cdata}
-		this.parameters = {};
+		// global parameters reached from everywhere
+		this.glblParameters = {};
+		this.callFrameStack = [];
+		this.pushCallFrame(null); // Push the file scope locals
 
 		// Coordinate system is P0
 		this.settings.coord_system=this.coordinateSystemTable[0];
@@ -74,6 +78,24 @@ CWS.Interpreter = function (machine)
 			this.g17({number:17});
 		}
 		this.stopRunning = false;
+	}
+
+// this pushes a procedure local scope onto calling frame stack
+CWS.Interpreter.prototype.pushCallFrame = function (callerCmdPos)
+	{
+		this.callFrameStack.push({
+			parameters: {},
+			callerPos:callerCmdPos
+		});
+	};
+
+// when returning from a procedure
+CWS.Interpreter.prototype.popCallFrame = function ()
+	{
+		if (this.callFrameStack.length > 1) {
+			const frm = this.callFrameStack.pop();
+			this.parser.setPos(frm.callerPos);
+		}
 	}
 
 CWS.Interpreter.prototype.runCommand = function (prgCmd)
@@ -113,8 +135,13 @@ CWS.Interpreter.prototype.m9999  = function (prgCmd)
 
 CWS.Interpreter.prototype.parameterVlu = function (name)
 	{
-		if (name in this.parameters)
-			return this.parameters[name];
+		// a global variable starts with '<_' or > 30
+		const isLocal = isNaN(+name) ? name[1] !== '_' : +name < 31;
+		if (isLocal)
+			return this.callFrameStack[this.callFrameStack.length-1]
+						['parameters'][name];
+		else if (name in this.glblParameters)
+			return this.glblParameters[name];
 		console.error(`Using ${name} uninitialised`);
 		return 0;
 	};
@@ -155,13 +182,13 @@ CWS.Interpreter.prototype.exprVlu = function (expr, cmd)
 			case 'xor': return (left && !right) || (!left && right);
 			case '/':
 				if (right === 0)
-					throw new CWS.ErrorParser(cmd.lineNumber,
+					throw new CWS.ErrorInterpreter(cmd.lineNumber,
 						`Error: division by zero ${ĺeft} / ${right}`,
 						{left, right});
 				return left / right;
 			case 'mod':
 				if (right === 0)
-					throw new CWS.ErrorParser(cmd.lineNumber,
+					throw new CWS.ErrorInterpreter(cmd.lineNumber,
 						`Error: division by zero ${ĺeft} MOD ${right}`,
 						{left, right});
 				return left % right;
@@ -242,7 +269,7 @@ CWS.Interpreter.prototype.s0  = function (prgCmd)
 		if (this.machineType!='3D Printer') {
 			const speed = this.exprVlu(prgCmd.s, prgCmd);
 			if (speed < 0)
-				throw new CWS.ErrorParser(prgCmd.line.lineNumber,
+				throw new CWS.ErrorInterpreter(prgCmd.line.lineNumber,
 					"Wrong S number. S cannot be a negative number",
 					prgCmd.line.rawLine);
 			else
@@ -325,7 +352,8 @@ CWS.Interpreter.prototype._arc  = function (prgCmd, ctype)
 		var d2=x*x+y*y;
 		var h_x2_div_d = 4.0*cmd.param.r*cmd.param.r-x*x-y*y;
 		if (h_x2_div_d < 0)
-			throw new CWS.ErrorParser(cmd.line.lineNumber,"Wrong radius",cmd.line.rawLine);
+			throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
+				"Wrong radius", cmd.line.rawLine);
 		h_x2_div_d = Math.sqrt(h_x2_div_d)/Math.sqrt(d2)*this.invertRadius;
 		if (ctype === 3) h_x2_div_d = -h_x2_div_d;
 		if (cmd.param.r < 0)
@@ -432,14 +460,16 @@ CWS.Interpreter.prototype.g10 = function (prgCmd)
 	if (l==1)
 	{
 		if (this.toolTable[p] === undefined)
-			throw new CWS.ErrorParser(prgCmd.line.lineNumber,"Wrong G10 L1. Invalid P word",prgCmd.line.rawLine);
+			throw new CWS.ErrorInterpreter(prgCmd.line.lineNumber,
+				"Wrong G10 L1. Invalid P word", prgCmd.line.rawLine);
 		for (var k in prgCmd.param)
 			this.toolTable[p][k]=prgCmd.param[k];
 	}
 	else if(l==2)
 	{
 		if (p<0 || p>6)
-			throw new CWS.ErrorParser(prgCmd.line.lineNumber,"Wrong G10 L2. Invalid P word",prgCmd.line.rawLine);
+			throw new CWS.ErrorInterpreter(prgCmd.line.lineNumber,
+				"Wrong G10 L2. Invalid P word",prgCmd.line.rawLine);
 		for (var k in prgCmd.param)
 			this.coordinateSystemTable[p][k]=prgCmd.param[k];
 	}
@@ -539,7 +569,8 @@ CWS.Interpreter.prototype.g54 = function (prgCmd)
 	{
 	// body...
 	if (this.modal.cutter_comp!=40)
-		throw new CWS.ErrorParser(this.lineNumber,"Wrong G54. Cutter compensation is on",this.rawLine);
+		throw new CWS.ErrorInterpreter(this.lineNumber,
+			"Wrong G54. Cutter compensation is on", this.rawLine);
 	this.settings.coord_system=this.coordinateSystemTable[1];
 	};
 
@@ -547,7 +578,8 @@ CWS.Interpreter.prototype.g55 = function (prgCmd)
 	{
 	// body...
 	if (this.modal.cutter_comp!=40)
-		throw new CWS.ErrorParser(this.lineNumber,"Wrong G55. Cutter compensation is on",this.rawLine);
+		throw new CWS.ErrorInterpreter(this.lineNumber,
+			"Wrong G55. Cutter compensation is on", this.rawLine);
 	this.settings.coord_system=this.coordinateSystemTable[2];
 	};
 
@@ -555,7 +587,8 @@ CWS.Interpreter.prototype.g56 = function (prgCmd)
 	{
 	// body...
 	if (this.modal.cutter_comp!=40)
-		throw new CWS.ErrorParser(this.lineNumber,"Wrong G56. Cutter compensation is on",this.rawLine);
+		throw new CWS.ErrorInterpreter(this.lineNumber,
+			"Wrong G56. Cutter compensation is on", this.rawLine);
 	this.settings.coord_system=this.coordinateSystemTable[3];
 	};
 
@@ -563,7 +596,8 @@ CWS.Interpreter.prototype.g57 = function (prgCmd)
 	{
 	// body...
 	if (this.modal.cutter_comp!=40)
-		throw new CWS.ErrorParser(this.lineNumber,"Wrong G57. Cutter compensation is on",this.rawLine);
+		throw new CWS.ErrorInterpreter(this.lineNumber,
+			"Wrong G57. Cutter compensation is on", this.rawLine);
 	this.settings.coord_system=this.coordinateSystemTable[4];
 	};
 
@@ -571,7 +605,8 @@ CWS.Interpreter.prototype.g58 = function (prgCmd)
 	{
 	// body...
 	if (this.modal.cutter_comp!=40)
-		throw new CWS.ErrorParser(this.lineNumber,"Wrong G58. Cutter compensation is on",this.rawLine);
+		throw new CWS.ErrorInterpreter(this.lineNumber,
+			"Wrong G58. Cutter compensation is on", this.rawLine);
 	this.settings.coord_system=this.coordinateSystemTable[5];
 	};
 
@@ -579,7 +614,8 @@ CWS.Interpreter.prototype.g59 = function (prgCmd)
 	{
 	// body...
 	if (this.modal.cutter_comp!=40)
-		throw new CWS.ErrorParser(this.lineNumber,"Wrong G59. Cutter compensation is on",this.rawLine);
+		throw new CWS.ErrorInterpreter(this.lineNumber,
+			"Wrong G59. Cutter compensation is on", this.rawLine);
 	this.settings.coord_system=this.coordinateSystemTable[6];
 	};
 
@@ -716,6 +752,49 @@ CWS.Interpreter.prototype.m83	= function (prgCmd)
 	// body...
 	};
 
+CWS.Interpreter.prototype.m97 = function (prgCmd)
+	{
+		const cmd = this.evalCmdExprs(prgCmd);
+		const N = cmd.param.n,
+		      L = cmd.param.l ? cmd.param.l : 1;
+		if (!(N in this.parser.nLinesToLines))
+			throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
+				`Procedure at : N${N} not found!`, cmd);
+		const line = this.parser.nLinesToLines[N];
+		const idx = this.parser.firstCmdFor(line);
+		this._subRoutineLoop(L, idx);
+	}
+
+CWS.Interpreter.prototype.m98 = function (prgCmd)
+	{
+		const cmd = this.evalCmdExprs(prgCmd);
+		const P = cmd.param.p,
+		      L = cmd.param.l ? cmd.param.l : 1;
+		if (!(P in this.parser.procedures))
+			throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
+				`Procedure: O${P} not found!`, cmd);
+		this._subRoutineLoop(L, this.parser.procedures[P]);
+	}
+
+CWS.Interpreter.prototype._subRoutineLoop = function(loops, pos)
+	{
+		// loop L times
+		for (let i = 0; i < loops;  ++i) {
+			let cmd;
+			this.pushCallFrame(this.parser.pos());
+			const frmLen = this.callFrameStack.length;
+			this.parser.setPos(pos);
+			while (this.callFrameStack.length == frmLen &&
+				   (cmd=this.parser.getCommand()))
+				this.runCommand(cmd)
+		}
+	};
+
+CWS.Interpreter.prototype.m99 = function (prgCmd)
+	{
+		this.popCallFrame();
+	};
+
 CWS.Interpreter.prototype.m104 = function (prgCmd)
 	{
 	// body...
@@ -728,19 +807,27 @@ CWS.Interpreter.prototype.m109 = function (prgCmd)
 
 CWS.Interpreter.prototype.parameterAssign = function(prgCmd)
 	{
-		this.parameters[prgCmd.number] = this.exprVlu(prgCmd.param['vlu']);
+		const name = prgCmd.number,
+		      vlu  = this.exprVlu(prgCmd.param['vlu']);
+		// a global variable starts with '<_' or > 30
+		const isLocal = isNaN(+name) ? name[1] !== '_' : +name < 31;
+		if (isLocal)
+			this.callFrameStack[this.callFrameStack.length-1]
+				['parameters'][prgCmd.number] = vlu;
+		else
+			this.glblParameters[prgCmd.number] = vlu;
 		console.log("Assigning ", prgCmd.number, prgCmd);
 	}
 
-// Creates an error object for the parser
-CWS.ErrorParser = function (line,message,data)
+// Creates an error object for the interpreter
+CWS.ErrorInterpreter = function (line,message,data)
   {
     this.line = line;
     this.message = message;
     this.data = data;
   };
 // Returns a string form of the error.
-CWS.ErrorParser.prototype.toString = function ()
+CWS.ErrorInterpreter.prototype.toString = function ()
   {
-    return `Error: ${message} on line: ${this.line}`;
+    return `ErrorIterpreter: ${message} on line: ${this.line}`;
   };

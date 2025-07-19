@@ -21,7 +21,7 @@ class MotionInterp {
 
 	init(data) {
 		this.parser      = new CWS.Parser();
-		this.interpreter = new CWS.Interpreter(data.header.machine);
+		this.interpreter = new CWS.Interpreter(data.header.machine, this.parser);
 		this.code        = data.code;
 		this.breakPnts   = data.breakPnts.sort();
 		this.errList     = [];
@@ -115,7 +115,9 @@ class MotionInterp {
 
 	#runAllCmds() {
 		let cmd;
-		while(cmd=this.parser.getCommand()) {
+		while(!this.interpreter.stopRunning &&
+			  (cmd=this.parser.getCommand()))
+		{
 			try {
 				this.interpreter.runCommand(cmd);
 			} catch(e) {

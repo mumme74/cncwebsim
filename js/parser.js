@@ -19,13 +19,33 @@ CWS.Parser = function ()
     this.feedMode = null;
     CWS.GLine.prototype.parser = this;
     this.curNLineNumer = 0;    // A program can set N... as line number
-    nLinesToLines = {};        // lookup table fo N... lines to program lines
+    this.nLinesToLines = {};   // lookup table fo N... lines to program lines
     this.parametersUsed = [];
+    this.procedures = {};
+    this._iter = 0;
   }
+
+CWS.Parser.prototype.pos = function()
+  {
+    return this._iter;
+  }
+
+CWS.Parser.prototype.setPos = function(pos)
+  {
+    this._iter = pos;
+  }
+
+CWS.Parser.prototype.firstCmdFor = function (lineNr)
+  {
+    return this.commands.findIndex(c=>c.line.lineNumber>=lineNr);
+  }
+
 // Returns the next command from the list
 CWS.Parser.prototype.getCommand = function()
   {
-    return this.commands.shift();
+    if (this._iter < this.commands.length)
+      return this.commands[this._iter++];
+    return null;
   };
 // Takes a line as a string and append a GLine to the array this.glines.
 // If the line number is given the function will parse the line again.
@@ -145,7 +165,8 @@ CWS.GLine.prototype.parseLine = function(line)
         for (; i < line.length && line[i] !== '>'; ++i) {
           if (line[i] === '<')
             this.throwError(`Unexpected '${line[i]}' at col: ${i}`);
-          parameterParts.push(line[i]);
+          if (line[i] > ' ')
+            parameterParts.push(line[i]);
         }
         if (i === line.length || line[i] !== '>')
           this.throwError(`Expected an '>' at col: ${i}`);
@@ -250,26 +271,28 @@ CWS.GLine.prototype.parseLine = function(line)
       return left;
     }
 
+    const roundCmdNr = (vlu)=>{
+      return (vlu%1==0) ? Math.round(vlu) : Math.round(vlu*10);
+    }
+
     //main loop to parse our line
     for (i=0, prevI = 0; i < line.length; prevI === i ? ++i : i) {
       prevI = i; // ensure loop advances even though i is increased in func.
       const c = line[i];
       switch (c) {
       case 'n':
-        const num = number();
+        const num = number(++i);
         this.nLineNumer = num;
         this.parser.nLinesToLines[num] = this.lineNumber;
-        result.push(c, num);
+        result.push([c, num]);
         break;
-      case 'g': case 'm': case 'o':
-        vlu = number(++i);
-        vlu = (vlu%1==0) ? Math.round(vlu) : Math.round(vlu*10);
+      case 'g': case 'm': case 'p': case 'o':
+        vlu = roundCmdNr(number(++i));
         result.push([c, vlu]);
         break;
       case '#': // parameter access, assignment or parameter expression
         result.push(parameter(true));
         break;
-      // TODO support expressions
       case ' ': case '\t': case '\b': case '\r':
         break;
       case ';': // comment rest of line.
@@ -541,6 +564,23 @@ CWS.GLine.prototype.separeteCommands = function(line)
               c.mgroup=4;
               pos=23;
               break;
+            case 97:
+              if (!this.checkParameter(parametersList,c,'n'))
+                this.throwError("Wrong G97. Missing word N");
+              this.checkParameter(parametersList,c,'l')
+              this.parser.activeCommand = null;
+              c.mgroup=0;
+              pos=0;
+              break;
+            case 98:
+              if (!this.checkParameter(parametersList,c,'p'))
+                this.throwError("Wrong G98. Missing word P");
+              this.checkParameter(parametersList,c,'l')
+            case 99: // fallthrough intentional
+              this.parser.activeCommand = null;
+              c.mgroup=0;
+              pos=0;
+              break;
             default:
               c.number=9999;
               param=elem;
@@ -560,6 +600,12 @@ CWS.GLine.prototype.separeteCommands = function(line)
           c.param['s']=elem[1];
           pos=3;
           break;
+        // define procedure
+        case 'o':
+          this.parser.procedures[c.number]=this.parser.commands.length+1;
+          this.parser.activeCommand=null;
+          pos=0;
+          break;
         // Parameter assignment
         case '=':
           c.param['vlu'] = elem[2];
@@ -573,35 +619,35 @@ CWS.GLine.prototype.separeteCommands = function(line)
     {
       var temp = false;
       var temp2 = true;
-      var c = new CWS.Command();
-      temp = this.checkParameter(parametersList,c,'x')||temp;
-      temp = this.checkParameter(parametersList,c,'y')||temp;
-      temp = this.checkParameter(parametersList,c,'z')||temp;
-      temp = this.checkParameter(parametersList,c,'e')||temp;
-      temp = this.checkParameter(parametersList,c,'f')||temp;
-      temp = this.checkParameter(parametersList,c,'a')||temp;
+      var c1 = new CWS.Command();
+      temp = this.checkParameter(parametersList,c1,'x')||temp;
+      temp = this.checkParameter(parametersList,c1,'y')||temp;
+      temp = this.checkParameter(parametersList,c1,'z')||temp;
+      temp = this.checkParameter(parametersList,c1,'e')||temp;
+      temp = this.checkParameter(parametersList,c1,'f')||temp;
+      temp = this.checkParameter(parametersList,c1,'a')||temp;
       if (this.parser.activeCommand==2 || this.parser.activeCommand==3)
       {
         temp2 = false;
-        temp2 = this.checkParameter(parametersList,c,'r')||temp2;
-        temp2 = this.checkParameter(parametersList,c,'i')||temp2;
-        temp2 = this.checkParameter(parametersList,c,'j')||temp2;
-        temp2 = this.checkParameter(parametersList,c,'k')||temp2;
+        temp2 = this.checkParameter(parametersList,c1,'r')||temp2;
+        temp2 = this.checkParameter(parametersList,c1,'i')||temp2;
+        temp2 = this.checkParameter(parametersList,c1,'j')||temp2;
+        temp2 = this.checkParameter(parametersList,c1,'k')||temp2;
       }
       if (temp==true && temp2==true)
       {
-        c.ctype = 'g';
-        c.mgroup = 1;
-        c.number = this.parser.activeCommand;
+        c1.ctype = 'g';
+        c1.mgroup = 1;
+        c1.number = this.parser.activeCommand;
         // If G93 is active every line with G1,G2,G3 should have the F word
-        if (this.parser.feedMode==93 && c.number!=0 && ht[1]===undefined)
+        if (this.parser.feedMode==93 && c1.number!=0 && ht[1]===undefined)
           this.throwError("G93 is active but F word is missing");
-        ht[22]=c;
+        ht[22]=c1;
       }
       else
       {
         ht[22]=undefined;
-        this.throwError(`G${this.parser.activeCommand} incorrect parameters`);
+        this.throwError(`G${c.number} incorrect parameters`);
       }
     }
     // Fill the commands vector with the commands already sorted
@@ -655,7 +701,7 @@ CWS.Command = function ()
     this.line = null;
   }
 // Creates an error object for the parser
-CWS.ErrorParser = function (line,message,data)
+CWS.ErrorParser = function (line, message, data)
   {
     this.line = line;
     this.message = message;
@@ -664,6 +710,5 @@ CWS.ErrorParser = function (line,message,data)
 // Returns a string form of the error.
 CWS.ErrorParser.prototype.toString = function ()
   {
-    return "Error on line: "+this.line
-    throw "Error on line "+this.line+": "+this.message+"\n"+this.data;
+    return `ErrorParser: ${message} on line: ${this.line}`;
   };
