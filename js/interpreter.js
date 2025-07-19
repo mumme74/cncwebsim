@@ -85,7 +85,8 @@ CWS.Interpreter.prototype.pushCallFrame = function (callerCmdPos)
 	{
 		this.callFrameStack.push({
 			parameters: {},
-			callerPos:callerCmdPos
+			callerPos:callerCmdPos,
+			'while': {}
 		});
 	};
 
@@ -104,6 +105,8 @@ CWS.Interpreter.prototype.runCommand = function (prgCmd)
 			return;
 		else if (prgCmd.ctype === '=')
 			return this.parameterAssign(prgCmd);
+		else if (prgCmd.ctype.length > 1)
+			return this[prgCmd.ctype](prgCmd); // if, while, goto ...
 		return this[prgCmd.ctype+prgCmd.number](prgCmd);
 	};
 
@@ -803,6 +806,71 @@ CWS.Interpreter.prototype.m104 = function (prgCmd)
 CWS.Interpreter.prototype.m109 = function (prgCmd)
 	{
 	// body...
+	}
+
+CWS.Interpreter.prototype.goto = function (prgCmd)
+	{
+		const cmd = this.evalCmdExprs(prgCmd);
+		if (!(cmd.param.toLine in this.parser.nLinesToLines))
+			throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
+				`Line N${cmd.param.toLine} not found.`, cmd);
+		const line = this.parser.nLinesToLines[cmd.param.toLine];
+		const idx = this.parser.firstCmdFor(line);
+		this.parser.setPos(idx);
+	}
+
+CWS.Interpreter.prototype['if'] = function (prgCmd)
+	{
+		const cmd = this.evalCmdExprs(prgCmd);
+		if (!this.exprVlu(cmd.param.cond, cmd))
+			this.parser.jumpForward(1);
+		// else let rest of line play out
+	}
+
+CWS.Interpreter.prototype.then = function (prgCmd)
+	{
+		// unsure if we have to do anything here?
+	}
+
+CWS.Interpreter.prototype['while'] = function (prgCmd)
+	{
+		const wstk = this.callFrameStack[this.callFrameStack.length-1]['while'],
+			  cmd = this.evalCmdExprs(prgCmd),
+			  curIdx = this.parser.pos();
+		if (!(cmd.param.doNr in wstk)) {
+			// setup loop for first run
+			let endIdx = -1;
+			// look up the end for this while
+			for (let i = curIdx; i < this.parser.commands.length; ++i) {
+				const c = this.parser.commands[i];
+				if (c.ctype === 'end' && c.number === cmd.param.doNr) {
+					endIdx = i;
+					break;
+				}
+			}
+
+			if (endIdx === -1)
+				throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
+					`END${cmd.param.doNr} not found`);
+			wstk[cmd.param.doNr] = {whileIdx:curIdx, endIdx};
+		}
+
+		// exit loop by jumping end +1
+		if (!this.exprVlu(cmd.param.cond)) {
+			this.parser.setPos(wstk[cmd.param.doNr].endIdx+1);
+			delete wstk[cmd.param.doNr];
+		}
+	}
+
+CWS.Interpreter.prototype.end = function (prgCmd)
+	{
+		const wstk = this.callFrameStack[this.callFrameStack.length-1]['while'],
+			  cmd = this.evalCmdExprs(prgCmd),
+			  whObj = wstk[cmd.number];
+	    if (!whObj)
+			throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
+				`End without starting 'WHILE [...] DO${cmd.number}}`);
+		this.parser.setPos(whObj.whileIdx-1); // jump back to while
 	}
 
 CWS.Interpreter.prototype.parameterAssign = function(prgCmd)

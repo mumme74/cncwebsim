@@ -40,6 +40,15 @@ CWS.Parser.prototype.firstCmdFor = function (lineNr)
     return this.commands.findIndex(c=>c.line.lineNumber>=lineNr);
   }
 
+// move internal pospntr noLines forward x noLines
+CWS.Parser.prototype.jumpForward = function (noLines)
+  {
+    const lineNr = this.commands[this._iter].line.lineNumber;
+    for (; this._iter < this.commands.length; this._iter++)
+      if (this.commands[this._iter].line.lineNumber > lineNr)
+        return this._iter;
+  }
+
 // Returns the next command from the list
 CWS.Parser.prototype.getCommand = function()
   {
@@ -184,7 +193,8 @@ CWS.GLine.prototype.parseLine = function(line)
       this.parser.parametersUsed.push(parameterParts.join(''));
 
       // ws before and after: ' = '
-      if (lookUpAssign && peek() === '=' && eatWs() && eatWs(++i))
+      if (lookUpAssign && (line[i]==='=' || peek()==='=') &&
+          eatWs() && eatWs(++i))
         return ['=', parameterParts.join(''), expr()]; // assignment
 
       return parameterParts.join(''); // ordinary parameter access: x#1
@@ -215,26 +225,25 @@ CWS.GLine.prototype.parseLine = function(line)
         }
         this.throwError(`Unexpected ${line.substring(i,i+2)} at col: ${i}`);
       case '+': case'-':
-        i++;
-        return [line[i], 2];
+        return [line[i++], 2];
       default:
         // 2char long operator
-        if (i>=line.length-1)
-          this.throwError(`Unexpected ${line[i]} at col: ${i}`);
-        let op = line.substring(i,i+1); i++;
-        if (op === 'or')                   return [op, 4];
-        const comparison = ['eq','ne','gt','ge','lt','le'];
-        if (comparison.indexOf(op) !== -1) return [op, 3];
+        if (i < line.length-2) {
+          let op = line.substring(i,i+2); i+=2;
+          if (op === 'or')                   return [op, 4];
+          const comparison = ['eq','ne','gt','ge','lt','le'];
+          if (comparison.indexOf(op) !== -1) return [op, 3];
+          i-=2;
+        }
 
         // 3char long operator
-        if (i>=line.length-1)
-          this.throwError(`Unexpected ${line[i]} at col: ${i}`);
-        op = line.substring(i-1,i+1); i++;
-        if (op === 'mod')                     return ['mod',1];
-        if (['and','xor'].indexOf(op) !== -1) return [op, 4];
+        if (i < line.length-3) {
+          op = line.substring(i,i+3); i+=3;
+          if (op === 'mod')                     return ['mod',1];
+          if (['and','xor'].indexOf(op) !== -1) return [op, 4];
+          i-=3;
+        }
 
-        //this.throwError(`Unexpected ${op} at col: ${i}`);
-        i-=2;
         return null;
       }
     }
@@ -250,6 +259,7 @@ CWS.GLine.prototype.parseLine = function(line)
 
       while (i < line.length) {
         // optional, valid to end here, example: [#1] or #1=3
+        if (!isBracket && line[i] == ' ') return left;
         if (!eatWs()) return left;
         if (line[i] === ']') {
           if (!isBracket)
@@ -271,6 +281,56 @@ CWS.GLine.prototype.parseLine = function(line)
       return left;
     }
 
+    const parseGoto = ()=>{
+      if (line.substring(i,i+4) !== 'goto')
+        this.throwError(`Expected 'GOTO' at col: ${i}`);
+      i+=4;
+      return ['goto', roundCmdNr(number())];
+    }
+
+    const parseIf = ()=>{
+      if (line.substring(i, i+2) !== 'if')
+        this.throwError(`Expected 'IF' at col: ${i}`);
+      const res = ['if'];
+      i+=2;
+      if (!eatWs())
+        this.throwError(`Expected an expression at col: ${i}`);
+      res.push(expr());
+      if (!eatWs() || ['then', 'goto'].indexOf(line.substring(i,i+4)) === -1)
+        this.throwError(`Expected 'THEN' or 'GOTO' at col: ${i}`);
+      // handle end as spearate commands
+      return res;
+    }
+
+    const parseThen = ()=>{
+      if (line.substring(i, i+4) !== 'then')
+        this.throwError(`Expected a 'then' at col: ${i}`);
+      i+=4;
+      return ['then'];
+    }
+
+    const parseWhile = ()=>{
+      if (line.substring(i,i+5) !== 'while')
+        this.throwError(`Expected 'WHILE' at col: ${i}`);
+      const res = ['while'];
+      i+=5;
+      if (!eatWs())
+        this.throwError(`Expected [expression] at col: ${i}`);
+      res.push(expr());
+      if (!eatWs() || line.substring(i, i+2) !== 'do')
+        this.throwError(`Expected 'DO1 or DO2 ...' at col: ${i}`);
+      i+=2;
+      res.push(number());
+      return res;
+    }
+
+    const parseEnd = ()=>{
+      if (line.substring(i,i+3) !== 'end')
+        this.throwError(`Expected 'END' at col: ${i}`);
+      i+=3;
+      return ['end', number()];
+    }
+
     const roundCmdNr = (vlu)=>{
       return (vlu%1==0) ? Math.round(vlu) : Math.round(vlu*10);
     }
@@ -286,7 +346,13 @@ CWS.GLine.prototype.parseLine = function(line)
         this.parser.nLinesToLines[num] = this.lineNumber;
         result.push([c, num]);
         break;
-      case 'g': case 'm': case 'p': case 'o':
+      case 'g':
+        if (line.substring(i,i+4) === 'goto') {
+          result.push(parseGoto());
+          break;
+        }
+        // intentional fallthrough
+      case 'm': case 'p': case 'o':
         vlu = roundCmdNr(number(++i));
         result.push([c, vlu]);
         break;
@@ -311,8 +377,18 @@ CWS.GLine.prototype.parseLine = function(line)
       case '[':
         this.throwError(`Unexpected expression at ${i}`);
       default:
-        eatWs(++i);
-        result.push([c, expr()]);
+        if (line.substring(i,i+2) === 'if') {
+          result.push(parseIf());
+        } else if (line.substring(i,i+5) === 'while') {
+          result.push(parseWhile());
+        } else if (line.substring(i,i+3) === 'end') {
+          result.push(parseEnd());
+        } else if (line.substring(i,i+4) === 'then') {
+          result.push(parseThen());
+        } else {
+          eatWs(++i);
+          result.push([c, expr()]);
+        }
       }
     }
     return result;
@@ -350,32 +426,37 @@ CWS.GLine.prototype.parseLine = function(line)
 // A line may contain more than one command for the machine.
 // Here the line will be divided into multiple commands for the machine.
 // If the line contains more than one command, they will be sorted using the following method
-  // 0.     set feed rate mode (G93, G94 — inverse time or per minute).
-  // 1.     assign to an parameter
-  // 2.     set feed rate (F).
-  // 3.     set spindle speed (S).
-  // 4.     set temperature (M104).
-  // 5.     change tool (M6).
-  // 6.     spindle on or off (M3, M4, M5).
-  // 7.     coolant on or off (M7, M8, M9).  wait for temperature (M109)
-  // 8.     enable or disable overrides (M48, M49). extrusion mode (M82, M83)
-  // 9.     dwell (G4).
-  // 10.    set active plane (G17, G18, G19).
-  // 11.    set length units (G20, G21).
-  // 12.    cutter radius compensation on or off (G40, G41, G42)
-  // 13.    cutter length compensation on or off (G43, G49)
-  // 14.    coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3).
-  // 15.    set path control mode (G61, G61.1, G64)
-  // 16.    set distance mode (G90, G91).
-  // 17.    set retract mode (G98, G99).
-  // 18.    home (G28, G30) or
-  // 19.    change coordinate system data (G10)
-  // 20.    set axis offsets (G92, G92.1, G92.2).
-  // 21.    G53.
-  // 22.    perform motion (G0 to G3, G80 to G89)
-  // 22.    X,Y,Z,R,I,J,K
-  // 23.    stop (M0, M1, M2, M30, M60).
-  // 24.    Command not implemented
+  // 0.     Line number (Nxx)
+  // 1.     Subroutine Oxxx
+  // 2.     set feed rate mode (G93, G94 — inverse time or per minute).
+  // 3.     IF, WHILE, M97, M98, M99
+  // 4.     THEN
+  // 5.     assign to an parameter
+  // 6.     set feed rate (F).
+  // 7.     set spindle speed (S).
+  // 8.     set temperature (M104).
+  // 9.     change tool (M6).
+  // 10.    spindle on or off (M3, M4, M5).
+  // 11.    coolant on or off (M7, M8, M9).  wait for temperature (M109)
+  // 12.    enable or disable overrides (M48, M49). extrusion mode (M82, M83)
+  // 13.    dwell (G4).
+  // 14.    set active plane (G17, G18, G19).
+  // 15.    set length units (G20, G21).
+  // 16.    cutter radius compensation on or off (G40, G41, G42)
+  // 17.    cutter length compensation on or off (G43, G49)
+  // 18.    coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3).
+  // 19.    set path control mode (G61, G61.1, G64)
+  // 20.    set distance mode (G90, G91).
+  // 21.    set retract mode (G98, G99).
+  // 22.    home (G28, G30) or
+  // 23.    change coordinate system data (G10)
+  // 24.    set axis offsets (G92, G92.1, G92.2).
+  // 25.    G53.
+  // 26.    perform motion (G0 to G3, G80 to G89)
+  // 27.    X,Y,Z,R,I,J,K
+  // 28.    GOTO, END
+  // 29.    stop (M0, M1, M2, M30, M60).
+  // 30.    Command not implemented
 // Every command is an object of type Command
 // If the G function takes parameters they will be inside the object Command
 // A G code for motion (G0,G1,G2,G3) will only be added to the commands list if it has axis words
@@ -398,15 +479,17 @@ CWS.GLine.prototype.parseLine = function(line)
   // G41   D                       // G94
   // G42   D                       // G98
   // G43   H                       // G99
+CWS.GLine.prototype.multiCharCmds=['if','while','goto', 'then', 'end'];
 CWS.GLine.prototype.separeteCommands = function(line)
   {
     // Get all the parameters
-    var parametersList={};
-    var commandsUnsorted=[]
+    const parametersList={},
+          commandsUnsorted=[];
     for (var i = 0; i < line.length; i++)
     {
       elem=line[i];
-      if ('gmfso='.indexOf(elem[0]) !== -1)
+      if ('gmfso='.indexOf(elem[0]) !== -1 ||
+          this.multiCharCmds.indexOf(elem[0]) !== -1)
       {
         commandsUnsorted.push(elem);
       }
@@ -416,7 +499,7 @@ CWS.GLine.prototype.separeteCommands = function(line)
       }
     };
     // Get all the commands
-    ht=Array(25);
+    ht=Array(31);
     for (var i = 0; i < commandsUnsorted.length; i++)
     {
       var elem=commandsUnsorted[i];
@@ -431,7 +514,7 @@ CWS.GLine.prototype.separeteCommands = function(line)
             case 93: case 94:
               this.parser.feedMode = elem[1];
               c.mgroup=5;
-              pos=0;
+              pos=2;
               break;
             case 4:
               if (!this.checkParameter(parametersList,c,'p'))
@@ -439,45 +522,45 @@ CWS.GLine.prototype.separeteCommands = function(line)
               if (c.param['p']<0)
                 this.throwError("Wrong G4. P number must not be negative");
               c.mgroup=0;
-              pos=9;
+              pos=13;
               break;
             case 17: case 18: case 19:
               c.mgroup=2;
-              pos=10;
+              pos=14;
               break;
             case 20: case 21:
               c.mgroup=6;
-              pos=11;
+              pos=15;
               break;
             case 41: case 42:
               if (!this.checkParameter(parametersList,c,'d'))
                 this.throwError("Wrong G"+elem[1]+". Missing word D");
             case 40:
               c.mgroup=7;
-              pos=12;
+              pos=16;
               break;
             case 43:
               if (!this.checkParameter(parametersList,c,'h'))
                 this.throwError("Wrong G43. Missing word H");
             case 49: // fallthrough intentional
               c.mgroup=8;
-              pos=13;
+              pos=17;
               break;
             case 54: case 55: case 56: case 57: case 58: case 59:
               c.mgroup=12;
-              pos=14;
+              pos=18;
               break;
             case 61: case 64:
               c.mgroup=13;
-              pos=15;
+              pos=19;
               break;
             case 90: case 91:
               c.mgroup=3;
-              pos=16;
+              pos=20;
               break;
             case 98: case 99:
               c.mgroup=10;
-              pos=17;
+              pos=21;
               break;
             case 30:
               this.checkParameter(parametersList,c,'p');
@@ -487,7 +570,7 @@ CWS.GLine.prototype.separeteCommands = function(line)
               this.checkParameter(parametersList,c,'y');
               this.checkParameter(parametersList,c,'z');
               c.mgroup=0;
-              pos=18;
+              pos=22;
               break;
             case 10:
               if (this.checkParameter(parametersList,c,'l'))
@@ -508,7 +591,7 @@ CWS.GLine.prototype.separeteCommands = function(line)
               else
                 this.throwError("Wrong G10. Missing word L");
               c.mgroup=0;
-              pos=19;
+              pos=23;
               break;
             case 92:
               var temp = false;
@@ -519,21 +602,21 @@ CWS.GLine.prototype.separeteCommands = function(line)
               if (temp==false)
                 this.throwError("Wrong G92. All axis words are omitted");
               c.mgroup=0;
-              pos=20;
+              pos=24;
               break;
             case 53:
               c.mgroup=0;
-              pos=21;
+              pos=25;
               break;
             case 0: case 1: case 2: case 3:
               this.parser.activeCommand=c.number;
               c.mgroup=1;
-              pos=22;
+              pos=26;
               break;
             default:
               c.number=9999;
               param=elem;
-              pos=24;
+              pos=30;
               break;
           }
           break;
@@ -542,27 +625,27 @@ CWS.GLine.prototype.separeteCommands = function(line)
           switch (elem[1])
           {
             case 104:
-              pos=4;
+              pos=8;
               break;
             case 6:
               c.mgroup=6;
-              pos=5;
+              pos=9;
               break;
             case 3: case 4: case 5:
               c.mgroup=7;
-              pos=6;
+              pos=10;
               break;
             case 7: case 8: case 9: case 109:
               c.mgroup=8;
-              pos=7;
+              pos=11;
               break;
             case 48: case 49: case 82: case 83:
               c.mgroup=9;
-              pos=8;
+              pos=12;
               break;
             case 0: case 1: case 2: case 30: case 60:
               c.mgroup=4;
-              pos=23;
+              pos=29;
               break;
             case 97:
               if (!this.checkParameter(parametersList,c,'n'))
@@ -570,7 +653,7 @@ CWS.GLine.prototype.separeteCommands = function(line)
               this.checkParameter(parametersList,c,'l')
               this.parser.activeCommand = null;
               c.mgroup=0;
-              pos=0;
+              pos=3;
               break;
             case 98:
               if (!this.checkParameter(parametersList,c,'p'))
@@ -579,12 +662,12 @@ CWS.GLine.prototype.separeteCommands = function(line)
             case 99: // fallthrough intentional
               this.parser.activeCommand = null;
               c.mgroup=0;
-              pos=0;
+              pos=3;
               break;
             default:
               c.number=9999;
               param=elem;
-              pos=24;
+              pos=30;
               break;
           }
           break;
@@ -592,24 +675,48 @@ CWS.GLine.prototype.separeteCommands = function(line)
         case 'f':
           c.number=0;
           c.param['f']=elem[1];
-          pos=2;
+          pos=6;
           break;
         // Spindle speed or temperature
         case 's':
           c.number=0;
           c.param['s']=elem[1];
-          pos=3;
+          pos=7;
           break;
         // define procedure
         case 'o':
           this.parser.procedures[c.number]=this.parser.commands.length+1;
           this.parser.activeCommand=null;
+          pos=1;
+          break;
+        case'n':
           pos=0;
           break;
         // Parameter assignment
         case '=':
           c.param['vlu'] = elem[2];
-          pos=1;
+          this.parser.activeCommand=null;
+          pos=5;
+          break;
+        case 'goto':
+          c.param['toLine'] = elem[1];
+          pos=28;
+          break;
+        case 'while':
+          c.param.cond = elem[1];
+          c.param.doNr = elem[2];
+          pos=3;
+          break;
+        case 'end':
+          pos=28;
+          break;
+        case 'if':
+          c.param.cond = elem[1];
+          pos=3; // must have higher priority than assign and then
+          break;
+        case 'then':
+          c.param.cond = elem[1];
+          pos=4;
           break;
       }
       ht[pos]=c;
@@ -644,7 +751,7 @@ CWS.GLine.prototype.separeteCommands = function(line)
           this.throwError("G93 is active but F word is missing");
         ht[22]=c1;
       }
-      else
+      else if (c)
       {
         ht[22]=undefined;
         this.throwError(`G${c.number} incorrect parameters`);
