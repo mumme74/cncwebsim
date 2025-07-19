@@ -361,6 +361,10 @@ CWS.GLine.prototype.parseLine = function(line)
         break;
       case ' ': case '\t': case '\b': case '\r':
         break;
+      case '$': // stange slicer specific variable, ignore rest of line
+        for (; i < line.length; ++i)
+          ;
+        break;
       case ';': // comment rest of line.
         vlu = [];
         for (; i < line.length; ++i)
