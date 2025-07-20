@@ -12,7 +12,7 @@ class MotionInterp {
 	// states that motion can have, including debug
 	static States = {
 		Idle:"idle", Running:"running", Continue: "continue",
-		Next:"next", StepOver:"stepover", Halted: "halted"
+		Next:"next", StepOut:"stepout", Halted: "halted"
 	};
 
 	constructor() {
@@ -40,8 +40,8 @@ class MotionInterp {
 		case MotionInterp.States.Next:
 			result = this.next();
 			break;
-		case MotionInterp.States.StepOver:
-			result = this.stepOver();
+		case MotionInterp.States.StepOut:
+			result = this.stepOut();
 			break;
 		case MotionInterp.States.Idle: // fallthrough
 		default:
@@ -97,14 +97,14 @@ class MotionInterp {
 
 		const endPos = this.interpreter.getPos() - this.noMoveCmdCnt;
 		const p = endPos * 6, c = endPos * 2;
-		const res = {positions:this.positions.slice(oldPos * 6, p+6),
-			         color:this.color.slice(oldPos*2, c +2),
+		const res = {positions:this.positions.slice(oldPos * 6, p),
+			         color:this.color.slice(oldPos*2, c),
 			         error:this.errList, atLine: cmd.cmd.line.lineNumber-1,
 					 state: this.state};
 		return res;
 	}
 
-	stepOver() {
+	stepOut() {
 		if (!this.interpreter.outputCommands.length) {
 			this.state = MotionInterp.States.Idle;
 			return {positions:[], color:[],error:this.errList,
@@ -192,8 +192,8 @@ class MotionInterp {
 		this.positions[ i + 4 ] = cmd.y1;
 		this.positions[ i + 5 ] = cmd.z1;
 
-		this.color[c]   = cmd.ctype;
-		this.color[c+1] = cmd.ctype;
+		this.color[c]   = cmd.number;
+		this.color[c+1] = cmd.number;
 	}
 };
 

@@ -115,7 +115,7 @@ CWS.UI = function (controller)
 			controller.interpreterContinue();
 		});
 		$("#stepOverIcon").click(function () {
-			controller.interpreterStepOver();
+			controller.interpreterStepOut();
 		});
 		$("#nextIcon").click(function () {
 			controller.interpreterNext();

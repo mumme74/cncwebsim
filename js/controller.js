@@ -61,6 +61,9 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
                 return;
             controller.save(true);
         });
+
+        this.setupKeybind();
+
         this.autoRun = autoRun;
     };
 
@@ -103,6 +106,33 @@ CWS.Controller.prototype =
     };
 
 CWS.Controller.prototype.constructor = CWS.Controller;
+
+CWS.Controller.prototype.setupKeybind = function ()
+    {
+        $(window).bind('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            switch (String.fromCharCode(e.which).toLowerCase()) {
+            case 's': // Ctrl+s => save
+                this.save(true);
+                break;
+            case '4': // Ctrl-4 => Run
+                this.interpreterRun();
+                break;
+            case '5': // Ctrl-5 => Start debug
+                this.interpreterContinue();
+                break;
+            case '6': // Ctrl-6 => next step
+                this.interpreterNext();
+                break;
+            case '7': // Ctrl-7 => Step out
+                this.interpreterStepOut();
+                break;
+            default:
+                return; // don't stop event propagation
+            }
+            e.preventDefault();
+        }});
+    }
 
 CWS.Controller.prototype.createProject = function(data)
 	{
@@ -394,9 +424,9 @@ CWS.Controller.prototype.interpreterNext = function()
         this.motion.next();
     }
 
-CWS.Controller.prototype.interpreterStepOver = function()
+CWS.Controller.prototype.interpreterStepOut = function()
     {
-        this.motion.stepOver();
+        this.motion.stepOut();
     }
 
 CWS.Controller.prototype.updateWorkpieceDraw = function()
