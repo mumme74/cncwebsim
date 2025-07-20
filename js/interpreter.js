@@ -7,6 +7,7 @@ CWS.Interpreter = function (machine, parser)
 		// Mill - Mill, Lathe - Lathe, 3D Printer - Printer
 		this.machineType = machine.mtype;
 		this.parser = parser;
+		this.debugMode = false;
 		this.modal =
 		{
 			motion:0,                  // {G0,G1,G2,G3,G38.2,G80}
@@ -78,6 +79,7 @@ CWS.Interpreter = function (machine, parser)
 			this.g17({number:17});
 		}
 		this.stopRunning = false;
+		this._iter = 0;
 	}
 
 // this pushes a procedure local scope onto calling frame stack
@@ -112,8 +114,21 @@ CWS.Interpreter.prototype.runCommand = function (prgCmd)
 
 CWS.Interpreter.prototype.getCommand = function ()
 	{
-		return this.outputCommands.shift();
+		if (this.outputCommands.length > this._iter)
+			return this.outputCommands[this._iter++];
+		return null;
 	};
+
+CWS.Interpreter.prototype.getPos = function()
+	{
+		return this._iter;
+	}
+
+CWS.Interpreter.prototype.setPos = function(newIdx)
+	{
+		this._iter = newIdx;
+	}
+
 // Create a new entry in the tool table
 CWS.Interpreter.prototype.createTooTableEntry = function (tnumber)
 	{
@@ -128,12 +143,12 @@ CWS.Interpreter.prototype.createTooTableEntry = function (tnumber)
 // If a G code is not implemented
 CWS.Interpreter.prototype.g9999  = function (prgCmd)
 	{
-		// body...
+		this.pushNoMoveCmd(prgCmd);
 	};
 // If a M code is not implemented
 CWS.Interpreter.prototype.m9999  = function (prgCmd)
 	{
-		// body...
+		this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype._islocal = function (name)
@@ -260,8 +275,7 @@ CWS.Interpreter.prototype.coordinatesToAbsolute  = function (prgCmd)
 		return cmd;
 	}
 
-	// Sets the feed rate. If in G93 mode the value will be calculated after the G1|G2|G3 functions
-
+// Sets the feed rate. If in G93 mode the value will be calculated after the G1|G2|G3 functions
 CWS.Interpreter.prototype.f0  = function (prgCmd)
 	{
 		const feed = this.exprVlu(prgCmd.param['f'], prgCmd);
@@ -307,13 +321,23 @@ CWS.Interpreter.prototype._makeCmdFromPrgCmd = function(prgCmd, ctype)
 			cmd.param.xyz.x, cmd.param.xyz.y, cmd.param.xyz.z);
 	}
 
-CWS.Interpreter.prototype._makeOutCmd = function(prgCmd, ctype, x1, y1, z1)
+CWS.Interpreter.prototype.pushNoMoveCmd = function(cmd)
+	{
+		if (this.debugMode)
+			this.outputCommands.push({
+				cmd, ctype:cmd.ctype, number:cmd.number,
+				noMove:true // a purely debug cmd
+			});
+	}
+
+CWS.Interpreter.prototype._makeOutCmd = function(prgCmd, number, x1, y1, z1)
 	{
 		const newCmd = {
 			x0:this.position.x, x1,
 			y0:this.position.y, y1,
 			z0:this.position.z, z1,
-			ctype, cmd: prgCmd
+			ctype:'g', number,
+			cmd: prgCmd
 		}
 
 		this.position.x = x1;
@@ -456,11 +480,12 @@ CWS.Interpreter.prototype.g3  = function (prgCmd)
 
 CWS.Interpreter.prototype.g4  = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.g10 = function (prgCmd)
 	{
+	this.pushNoMoveCmd(prgCmd);
 	var l=Math.round(prgCmd.param['l']);
 	delete prgCmd.param['l'];
 	var p=Math.round(prgCmd.param['p']);
@@ -487,6 +512,7 @@ CWS.Interpreter.prototype.g10 = function (prgCmd)
 
 CWS.Interpreter.prototype.g17 = function (prgCmd)
 	{
+	this.pushNoMoveCmd(prgCmd);
 	this.plane_select=prgCmd.number;
 	this.axisXYZ_0='x';
 	this.axisXYZ_1='y';
@@ -498,6 +524,7 @@ CWS.Interpreter.prototype.g17 = function (prgCmd)
 
 CWS.Interpreter.prototype.g18 = function (prgCmd)
 	{
+	this.pushNoMoveCmd(prgCmd);
 	this.plane_select=prgCmd.number;
 	this.axisXYZ_0='x';
 	this.axisXYZ_1='z';
@@ -509,6 +536,7 @@ CWS.Interpreter.prototype.g18 = function (prgCmd)
 
 CWS.Interpreter.prototype.g19 = function (prgCmd)
 	{
+	this.pushNoMoveCmd(prgCmd);
 	this.plane_select=prgCmd.number;
 	this.axisXYZ_0='y';
 	this.axisXYZ_1='z';
@@ -520,63 +548,65 @@ CWS.Interpreter.prototype.g19 = function (prgCmd)
 
 CWS.Interpreter.prototype.g20 = function (prgCmd)
 	{
+	this.pushNoMoveCmd(prgCmd);
 	this.modal.units = 25.4;
 	};
 
 CWS.Interpreter.prototype.g21 = function (prgCmd)
 	{
+	this.pushNoMoveCmd(prgCmd);
 	this.modal.units = 1.0;
 	};
 // Go to Predefined Position
 // The parameter values are absolute machine coordinates in the native machine units
 CWS.Interpreter.prototype.g28 = function (prgCmd)
 	{
-		const outCmd = this._makeCmdFromPrgCmd(prgCmd, 28);
-		this.outputCommands.push(outCmd);
+	const outCmd = this._makeCmdFromPrgCmd(prgCmd, 28);
+	this.outputCommands.push(outCmd);
 	};
 // Go to Predefined Position
 // The parameter values are absolute machine coordinates in the native machine units
 CWS.Interpreter.prototype.g30 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.g40 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	this.modal.cutter_comp=40;
 	};
 
 CWS.Interpreter.prototype.g41 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	this.modal.cutter_comp=41;
 	};
 
 CWS.Interpreter.prototype.g42 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	this.modal.cutter_comp=42;
 	};
 
 CWS.Interpreter.prototype.g43 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.g49 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.g53 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.g54 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	if (this.modal.cutter_comp!=40)
 		throw new CWS.ErrorInterpreter(this.lineNumber,
 			"Wrong G54. Cutter compensation is on", this.rawLine);
@@ -585,7 +615,7 @@ CWS.Interpreter.prototype.g54 = function (prgCmd)
 
 CWS.Interpreter.prototype.g55 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	if (this.modal.cutter_comp!=40)
 		throw new CWS.ErrorInterpreter(this.lineNumber,
 			"Wrong G55. Cutter compensation is on", this.rawLine);
@@ -594,7 +624,7 @@ CWS.Interpreter.prototype.g55 = function (prgCmd)
 
 CWS.Interpreter.prototype.g56 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	if (this.modal.cutter_comp!=40)
 		throw new CWS.ErrorInterpreter(this.lineNumber,
 			"Wrong G56. Cutter compensation is on", this.rawLine);
@@ -603,7 +633,7 @@ CWS.Interpreter.prototype.g56 = function (prgCmd)
 
 CWS.Interpreter.prototype.g57 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	if (this.modal.cutter_comp!=40)
 		throw new CWS.ErrorInterpreter(this.lineNumber,
 			"Wrong G57. Cutter compensation is on", this.rawLine);
@@ -612,7 +642,7 @@ CWS.Interpreter.prototype.g57 = function (prgCmd)
 
 CWS.Interpreter.prototype.g58 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	if (this.modal.cutter_comp!=40)
 		throw new CWS.ErrorInterpreter(this.lineNumber,
 			"Wrong G58. Cutter compensation is on", this.rawLine);
@@ -621,7 +651,7 @@ CWS.Interpreter.prototype.g58 = function (prgCmd)
 
 CWS.Interpreter.prototype.g59 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	if (this.modal.cutter_comp!=40)
 		throw new CWS.ErrorInterpreter(this.lineNumber,
 			"Wrong G59. Cutter compensation is on", this.rawLine);
@@ -630,28 +660,29 @@ CWS.Interpreter.prototype.g59 = function (prgCmd)
 
 CWS.Interpreter.prototype.g61 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.g64 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.g90 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	this.modal.distance=90;
 	};
 
 CWS.Interpreter.prototype.g91 = function (prgCmd)
 	{
+	this.pushNoMoveCmd(prgCmd);
 	this.modal.distance=91;
-	// body...
 	};
 
 CWS.Interpreter.prototype.g92 = function (prgCmd)
 	{
+		this.pushNoMoveCmd(prgCmd);
 		const cmd = this.evalCmdExprs(prgCmd);
 		for (var k in cmd.param.xyz)
 			this.settings.coord_offset[k]=cmd.param.xyz[k]*this.modal.units;
@@ -659,106 +690,111 @@ CWS.Interpreter.prototype.g92 = function (prgCmd)
 
 CWS.Interpreter.prototype.g93 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	this.modal.feed_rate_mode=93;
 	};
 
 CWS.Interpreter.prototype.g94 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	this.modal.feed_rate_mode=94;
 	this.settings.feed_rate=null;
 	};
 
 CWS.Interpreter.prototype.g98 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.g99 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m0	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m1	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m2	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m3	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m4	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m5	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m6	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m7	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m8	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m9	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m30	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	this.stopRunning = true;
 	};
 
 CWS.Interpreter.prototype.m48	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m49	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m60	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m82	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m83	= function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
+	};
+
+CWS.Interpreter.prototype.m86	= function (prgCmd)
+	{
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m97 = function (prgCmd)
@@ -801,21 +837,23 @@ CWS.Interpreter.prototype._subRoutineLoop = function(loops, pos)
 
 CWS.Interpreter.prototype.m99 = function (prgCmd)
 	{
+		this.pushNoMoveCmd(prgCmd);
 		this.popCallFrame();
 	};
 
 CWS.Interpreter.prototype.m104 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	};
 
 CWS.Interpreter.prototype.m109 = function (prgCmd)
 	{
-	// body...
+	this.pushNoMoveCmd(prgCmd);
 	}
 
 CWS.Interpreter.prototype.goto = function (prgCmd)
 	{
+		this.pushNoMoveCmd(prgCmd);
 		const cmd = this.evalCmdExprs(prgCmd);
 		if (!(cmd.param.toLine in this.parser.nLinesToLines))
 			throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
@@ -827,6 +865,7 @@ CWS.Interpreter.prototype.goto = function (prgCmd)
 
 CWS.Interpreter.prototype['if'] = function (prgCmd)
 	{
+		this.pushNoMoveCmd(prgCmd);
 		const cmd = this.evalCmdExprs(prgCmd);
 		if (!this.exprVlu(cmd.param.cond, cmd))
 			this.parser.jumpForward(1);
@@ -835,11 +874,12 @@ CWS.Interpreter.prototype['if'] = function (prgCmd)
 
 CWS.Interpreter.prototype.then = function (prgCmd)
 	{
-		// unsure if we have to do anything here?
+		this.pushNoMoveCmd(prgCmd);
 	}
 
 CWS.Interpreter.prototype['while'] = function (prgCmd)
 	{
+		this.pushNoMoveCmd(prgCmd);
 		const wstk = this.callFrameStack[this.callFrameStack.length-1]['while'],
 			  cmd = this.evalCmdExprs(prgCmd),
 			  curIdx = this.parser.pos();
@@ -870,6 +910,7 @@ CWS.Interpreter.prototype['while'] = function (prgCmd)
 
 CWS.Interpreter.prototype.end = function (prgCmd)
 	{
+		this.pushNoMoveCmd(prgCmd);
 		const wstk = this.callFrameStack[this.callFrameStack.length-1]['while'],
 			  cmd = this.evalCmdExprs(prgCmd),
 			  whObj = wstk[cmd.number];
@@ -881,6 +922,7 @@ CWS.Interpreter.prototype.end = function (prgCmd)
 
 CWS.Interpreter.prototype.parameterAssign = function(prgCmd)
 	{
+		this.pushNoMoveCmd(prgCmd);
 		const name = prgCmd.number,
 		      vlu  = this.exprVlu(prgCmd.param['vlu']);
 		if (this._islocal(name))

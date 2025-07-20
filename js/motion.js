@@ -85,17 +85,20 @@ CWS.Motion.prototype.setController = function (controller)
 			if (e.data.error.length!=0)
 				console.log(e.data.error);
 
-			if (_this.state === CWS.MotionStates.Running ||
-				_this.state === CWS.MotionStates.Continue)
-			{
-				_this.controller.machine.setMotion(e.data);
-			} else
-				_this.controller.machine.updateMotion(e.data);
+			if (e.data.positions.length) {
+				if (_this.state === CWS.MotionStates.Running ||
+					_this.state === CWS.MotionStates.Continue)
+				{
+					_this.controller.machine.setMotion(e.data);
+				} else
+					_this.controller.machine.updateMotion(e.data);
+			}
 
 			_this.state = e.data.state;
 			_this.atLine   = e.data.atLine;
 
-			_this.controller.updateWorkpieceDraw();
+			if (e.data.positions.length) // might be a debug cmd
+				_this.controller.updateWorkpieceDraw();
 			_this.controller.editor.setCurrentLine(_this.atLine, _this.state);
 
 			if (e.data.state === CWS.MotionStates.Idle)
