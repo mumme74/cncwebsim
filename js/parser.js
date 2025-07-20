@@ -215,32 +215,27 @@ CWS.GLine.prototype.parseLine = function(line)
     const exprOperator = ()=>{
       switch (line[i]) {
       case '*':
-        if (peek() === '*') { ++i; return ['**',0]; }
-        i++; return ['*',1];
+        if (peek() === '*') { ++i; return ['**', 4]; }
+        i++; return ['*', 3];
       case '/':
-        i++; return ['/', 1];
-      case 'm':
-        if (i < line.length-2 && line.substring(i,i+2) === 'mod') {
-           i+=2; return ['mod',1];
-        }
-        this.throwError(`Unexpected ${line.substring(i,i+2)} at col: ${i}`);
+        i++; return ['/', 3];
       case '+': case'-':
         return [line[i++], 2];
       default:
         // 2char long operator
         if (i < line.length-2) {
           let op = line.substring(i,i+2); i+=2;
-          if (op === 'or')                   return [op, 4];
+          if (op === 'or')                   return [op, 0];
           const comparison = ['eq','ne','gt','ge','lt','le'];
-          if (comparison.indexOf(op) !== -1) return [op, 3];
+          if (comparison.indexOf(op) !== -1) return [op, 1];
           i-=2;
         }
 
         // 3char long operator
         if (i < line.length-3) {
           op = line.substring(i,i+3); i+=3;
-          if (op === 'mod')                     return ['mod',1];
-          if (['and','xor'].indexOf(op) !== -1) return [op, 4];
+          if (op === 'mod')                     return ['mod', 3];
+          if (['and','xor'].indexOf(op) !== -1) return [op, 0];
           i-=3;
         }
 
@@ -255,7 +250,9 @@ CWS.GLine.prototype.parseLine = function(line)
       if (isBracket) ++i;
 
       let left = exprOperand(),
-          lastOp = [null,100]; // lowest priority
+          lastOp = [null,-100]; // lowest priority
+     // if (Array.isArray(left))
+      //  left = [lastOp, left, null]; // sub
 
       while (i < line.length) {
         // optional, valid to end here, example: [#1] or #1=3
@@ -272,12 +269,22 @@ CWS.GLine.prototype.parseLine = function(line)
         if (op === null) break;
 
         const right = exprOperand();
-        if (!Array.isArray(left) || op[1] < lastOp[1])
-          left = [op[0], left, right];
-        else
-          left[2] = [op, left[2], right];
+        // priority
+        if (Array.isArray(left) && lastOp[1] !== -100 && op[1] >= lastOp[1]) {
+          // new one has higher prio or equal
+          let r = left[2], p = left; // last right
+          while (Array.isArray(r) && r[[0]>=op[0]]) {
+            // walk down the right tree until last pos with my prio
+            p = r; r = r[2];
+          }
+          p[2] = [op[0], r, right];
+        } else {
+          left = [op[0], left, right]; // new has lower prio
+          lastOp = op;
+        }
       }
-
+      if (i === line.length && isBracket)
+        this.throwError(`Expected a closing ']'`);
       return left;
     }
 
@@ -373,10 +380,12 @@ CWS.GLine.prototype.parseLine = function(line)
         return result;
       case '(': // comment, part of line
         vlu = [];
-        for (i++; i < line.length && line[i] !== ')'; ++i)
+        for (i++, cnt=1; i < line.length && cnt > 0; ++i) {
+          if (line[i] === '(') cnt++;
+          else if (line[i] === ')') cnt--;
           vlu.push(line[i]);
+        }
         this.coments.push(vlu.join(''));
-        i++;
         break;
       case '[':
         this.throwError(`Unexpected expression at ${i}`);

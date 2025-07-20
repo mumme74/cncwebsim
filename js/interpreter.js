@@ -136,17 +136,21 @@ CWS.Interpreter.prototype.m9999  = function (prgCmd)
 		// body...
 	};
 
-CWS.Interpreter.prototype.parameterVlu = function (name)
+CWS.Interpreter.prototype._islocal = function (name)
 	{
 		// a global variable starts with '<_' or > 30
-		const isLocal = isNaN(+name) ? name[1] !== '_' : +name < 31;
-		if (isLocal)
+		return isNaN(+name) ? name[2] !== '_' : +name < 31;
+	}
+
+CWS.Interpreter.prototype.parameterVlu = function (name, cmd)
+	{
+		if (this._islocal(name))
 			return this.callFrameStack[this.callFrameStack.length-1]
 						['parameters'][name];
 		else if (name in this.glblParameters)
 			return this.glblParameters[name];
-		console.error(`Using ${name} uninitialised`);
-		return 0;
+		throw new ErrorInterpreter(cmd.line.lineNumber,
+				`Using ${name} uninitialised`);
 	};
 
 CWS.Interpreter.prototype.exprVlu = function (expr, cmd)
@@ -154,13 +158,13 @@ CWS.Interpreter.prototype.exprVlu = function (expr, cmd)
 		if (!isNaN(expr))
 			return expr;
 		if (typeof expr === 'string')
-			return this.parameterVlu(expr);
+			return this.parameterVlu(expr, cmd);
 		// need to run calculation
 		const getVlu = (exp)=>{
 			if (Array.isArray(exp))
 				return calculate(exp);
 			if (typeof exp === 'string')
-				return this.parameterVlu(exp);
+				return this.parameterVlu(exp, cmd);
 			return exp;
 		}
 		const calculate = (subExpr)=>{
@@ -220,6 +224,8 @@ CWS.Interpreter.prototype.evalCmdExprs = function (cmd)
 					doObj(vlu, ret[key]);
 				} else if (Array.isArray(vlu))
 					ret[key] = this.exprVlu(vlu, cmd);
+				else if (typeof vlu === 'string')
+					ret[key] = this.parameterVlu(vlu, cmd)
 				else
 					ret[key] = vlu;
 			}
@@ -877,14 +883,12 @@ CWS.Interpreter.prototype.parameterAssign = function(prgCmd)
 	{
 		const name = prgCmd.number,
 		      vlu  = this.exprVlu(prgCmd.param['vlu']);
-		// a global variable starts with '<_' or > 30
-		const isLocal = isNaN(+name) ? name[1] !== '_' : +name < 31;
-		if (isLocal)
+		if (this._islocal(name))
 			this.callFrameStack[this.callFrameStack.length-1]
 				['parameters'][prgCmd.number] = vlu;
 		else
 			this.glblParameters[prgCmd.number] = vlu;
-		console.log("Assigning ", prgCmd.number, prgCmd);
+		//console.log("Assigning ", prgCmd.number, prgCmd);
 	}
 
 // Creates an error object for the interpreter
