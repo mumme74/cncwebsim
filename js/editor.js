@@ -1,6 +1,7 @@
 /**
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
  */
+const langTools = ace.require('ace/ext/language_tools');
 
 CWS.CodeEditor = function ()
 	{
@@ -9,10 +10,11 @@ CWS.CodeEditor = function ()
 		this.editor = new ace.edit("editor");
 		this.editor.$blockScrolling = Infinity;
 		this.editor.setTheme("ace/theme/monokai");
-	    this.editor.getSession().setMode("ace/mode/gcode");
-	    this.editor.getSession().setUseWrapMode(true);
-	    this.editor.getSession().setTabSize(4);
-	    this.editor.setFontSize(18);
+		const session = this.editor.getSession();
+	    session.setMode("ace/mode/gcode");
+	    session.setUseWrapMode(true);
+	    session.setTabSize(2);
+	    this.editor.setFontSize(16);
 	    this.unsaved = false;
 		this.codeChangedSubscribers = [];
 
@@ -38,9 +40,47 @@ CWS.CodeEditor = function ()
 			e.stop();
 		});
 
+		$(document).ready(()=>{
+			this.setupCompleter();
+		});
 	};
 
+
 CWS.CodeEditor.prototype.constructor = CWS.CodeEditor;
+
+CWS.CodeEditor.prototype.setupCompleter = function ()
+	{
+		const completer = {
+			getCompletions: function(editor, session, pos, prefix, callback) {
+
+				callback(null, CWS.Interpreter.commands.map((cmd)=>{
+					return {
+							caption:cmd.name,
+							value:cmd.name,
+							meta:cmd.description
+						};
+				}));
+			},
+			getDocTooltip: function(item) {
+				if (item.exactMatch) {
+					return item.meta;
+				} else if (item.caption.startsWith('#'))
+				{
+					console.log(item)
+				}
+				return null; // No tooltip for other items
+			},
+			identifierRegexps:[/#/,/#\d+/, /#<[\b\d_ ]+>/]
+		};
+
+		langTools.setCompleters([completer, langTools.textCompleter]);
+
+		this.editor.setOptions({
+			//enableBasicAutocompletion: true,
+			enableSnippets: true,
+			enableLiveAutocompletion: true
+		});
+	}
 
 CWS.CodeEditor.prototype.codeChanged = function (ev)
 	{
