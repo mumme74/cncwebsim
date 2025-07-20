@@ -70,7 +70,7 @@ CWS.CodeEditor.prototype.readOnly = function(ro)
 		this.editor.setReadOnly(ro);
 	};
 
-CWS.CodeEditor.prototype.setCurrentLine = function(lineNr)
+CWS.CodeEditor.prototype.setCurrentLine = function(lineNr, state)
 	{
 		const markers = this.editor.getSession().getMarkers();
 		for (const [key, obj] of Object.entries(markers))
@@ -79,6 +79,7 @@ CWS.CodeEditor.prototype.setCurrentLine = function(lineNr)
 
 		if (lineNr > -1) {
 			this.editor.getSession().highlightLines(lineNr);
-			this.editor.scrollToLine(lineNr)
+			if (state === 'halted')
+				this.editor.scrollToLine(lineNr)
 		}
 	}

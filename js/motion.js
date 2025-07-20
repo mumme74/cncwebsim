@@ -96,7 +96,7 @@ CWS.Motion.prototype.setController = function (controller)
 			_this.atLine   = e.data.atLine;
 
 			_this.controller.updateWorkpieceDraw();
-			_this.controller.editor.setCurrentLine(_this.atLine);
+			_this.controller.editor.setCurrentLine(_this.atLine, _this.state);
 
 			if (e.data.state === CWS.MotionStates.Idle)
 				_this.data = null;
