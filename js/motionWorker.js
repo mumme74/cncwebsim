@@ -29,6 +29,11 @@ class MotionInterp {
 	}
 
 	onmessage(ev) {
+		if (ev.data.extra?.startsWith('#')) {
+			const varName = ev.data.extra;
+			const vlu = this.interpreter.parameterVlu(varName);
+			return postMessage({extra:varName, value: vlu, error:[]});
+		}
 		var result = "OK";
 		switch (ev.data.state) {
 		case MotionInterp.States.Running:

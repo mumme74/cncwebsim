@@ -14,6 +14,7 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
         this._run3D = true;
         this._run2D = true;
         this._runWireframe = true;
+        editor.controller = this;
 
         this.createDatGUI();
         // Create controls

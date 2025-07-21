@@ -65,14 +65,22 @@ CWS.Motion.prototype.setBreakpoints = function(breakPnts)
 		this.breakPnts = breakPnts;
 	}
 
-CWS.Motion.prototype.postMessage = function (state)
+CWS.Motion.prototype.getVariableVlu = function(varName, cb)
+	{
+		if (this.state === CWS.MotionStates.Halted && !this.varVluCb) {
+			this.varVluCb = cb;
+			this.postMessage(this.state, varName);
+		}
+	}
+
+CWS.Motion.prototype.postMessage = function (state, extra)
 	{
 		if (!this.inflight && this.data)
 			{
 				this.inflight = true;
 				this.state = state;
 				this.worker.postMessage({
-					...this.data, state, breakPnts: this.breakPnts});
+					...this.data, state, extra, breakPnts: this.breakPnts});
 			}
 	};
 
@@ -82,10 +90,10 @@ CWS.Motion.prototype.setController = function (controller)
 		var _this=this;
 		this.worker.onmessage = function (e)
 		{
-			if (e.data.error.length!=0)
+			if (e.data.error?.length!=0)
 				console.log(e.data.error);
 
-			if (e.data.positions.length) {
+			if (e.data.positions?.length) {
 				if (_this.state === CWS.MotionStates.Running ||
 					_this.state === CWS.MotionStates.Continue)
 				{
@@ -94,15 +102,20 @@ CWS.Motion.prototype.setController = function (controller)
 					_this.controller.machine.updateMotion(e.data);
 			}
 
-			_this.state = e.data.state;
-			_this.atLine   = e.data.atLine;
+			if (e.data.state) {
+				_this.state = e.data.state;
+				_this.atLine   = e.data.atLine;
 
-			if (e.data.positions.length) // might be a debug cmd
-				_this.controller.updateWorkpieceDraw();
-			_this.controller.editor.setCurrentLine(_this.atLine, _this.state);
+				if (e.data.positions.length) // might be a debug cmd
+					_this.controller.updateWorkpieceDraw();
+				_this.controller.editor.setCurrentLine(_this.atLine, _this.state);
 
-			if (e.data.state === CWS.MotionStates.Idle)
-				_this.data = null;
+				if (e.data.state === CWS.MotionStates.Idle)
+					_this.data = null;
+			} else if (e.data.extra) {
+				_this.varVluCb(e.data.extra, e.data.value);
+				_this.varVluCb = null;
+			}
 			_this.inflight = false;
 		};
 	};

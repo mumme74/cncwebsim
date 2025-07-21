@@ -1001,8 +1001,8 @@ CWS.Interpreter.prototype.commands = [
 	{name: 'WHILE', description: "Loop until condition is false\nWHILE[#1]DO1\nG1...\nEND1"},
 	{name: 'DO',  description: "Starts a while loop\nDO1 identifies the loop as 1, can be nested 1,2,3..."},
 	{name: 'END', description: "Ends a WHILE loop\nEND1 ends a while stareted by DO1"},
-	{name: '\#n', description: "Paramater (variable) used in program\n#1-31 are local to procedure\n#32>global (reached from everywhere)"},
-	{name: '\#<...>', description: "Named parameter (variable) used in program\n#<...> are local to procedure.\n#<_..> are global"}
+	{name: '#n', description: "Paramater (variable) used in program\n#1-31 are local to procedure\n#32>global (reached from everywhere)"},
+	{name: '#<...>', description: "Named parameter (variable) used in program\n#<...> are local to procedure.\n#<_..> are global"}
 ];
 CWS.Interpreter.commands = CWS.Interpreter.prototype.commands;
 
