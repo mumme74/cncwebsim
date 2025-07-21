@@ -164,6 +164,7 @@ class TokenTooltip extends Tooltip {
         var session = this.editor.editor.session;
         var docPos = session.screenToDocumentPosition(screenPos.row, screenPos.column);
         var token = session.getTokenAt(docPos.row, docPos.column);
+		var tokenText = "";
 
         if (!token && !session.getLine(docPos.row)) {
             token = {
@@ -202,19 +203,11 @@ class TokenTooltip extends Tooltip {
 			}
 		}
 
-        var tokenText = token.type + "\n" +token.value +"\n";
-        if (token.state)
-            tokenText += "|" + token.state;
-        if (token.merge)
-            tokenText += "\n  merge";
-        if (token.stateTransitions)
-            tokenText += "\n  " + token.stateTransitions.join("\n  ");
-
 		switch (token.type) {
 		case 'support.function': case 'keyword.control': {
 			const tok = token.value.replace(/(^[GM])0?([0-9]+$)/i, "$1$2")
-			const entry = CWS.Interpreter.commands.find(
-				e=>e.name.toUpperCase()===tok);
+							.toUpperCase();
+			const entry = CWS.Interpreter.commands.find(e=>e.name===tok);
 			if (entry) tokenText += entry.description;
 		} break;
 		case 'variable.other': {
@@ -229,16 +222,18 @@ class TokenTooltip extends Tooltip {
 		case 'support.type':
 			tokenText += "Start a new procedure";
 		  break;
+		default:
+			this.hide();
 		}
 
-        if (this.tokenText != tokenText) {
+        if (this.tokenText != tokenText && tokenText) {
             this.setText(tokenText);
             this.width = this.getWidth();
             this.height = this.getHeight();
             this.tokenText = tokenText;
-        }
 
-        this.show(null, this.x, this.y);
+        	this.show(null, this.x, this.y);
+        }
 
         this.token = token;
         session.removeMarker(this.marker);
@@ -254,7 +249,7 @@ class TokenTooltip extends Tooltip {
             this.setPosition(this.x, this.y);
         }
         if (!this.$timer)
-            this.$timer = setTimeout(this.update, 100);
+            this.$timer = setTimeout(this.update, 1000);
     };
 
     onMouseOut(e) {
