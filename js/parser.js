@@ -762,11 +762,11 @@ CWS.GLine.prototype.separeteCommands = function(line)
         // If G93 is active every line with G1,G2,G3 should have the F word
         if (this.parser.feedMode==93 && c1.number!=0 && ht[1]===undefined)
           this.throwError("G93 is active but F word is missing");
-        ht[22]=c1;
+        ht[26]=c1;
       }
       else if (c)
       {
-        ht[22]=undefined;
+        ht[26]=undefined;
         this.throwError(`G${c.number} incorrect parameters`);
       }
     }
