@@ -1,5 +1,5 @@
 
-body 
+body
 {
 	overflow: hidden;
 	padding: 0px;
@@ -24,7 +24,7 @@ body
 	-ms-user-select: none;
 	user-select: none;
 }
-nav 
+nav
 {
 	top:-36px;
 	position: absolute;
@@ -32,28 +32,28 @@ nav
 	width:100%;
     margin-bottom: 0px;
 }
-nav ul 
+nav ul
 {
 	list-style:none;
 	padding: 0px;
 }
-nav > ul 
+nav > ul
 {
     margin-bottom: 0px;
 	width:100%;
 	background:#272822;
 	position:relative;
 }
-nav > ul li 
+nav > ul li
 {
 	display:table-cell;
 }
-nav > ul > li:hover > ul 
+nav > ul > li:hover > ul
 {
 	display:block;
 	height:100%;
 }
-nav > ul > li > ul 
+nav > ul > li > ul
 {
 	display:block;
 	position:absolute;
@@ -69,7 +69,7 @@ nav > ul > li > ul
 	transition: all .3s ease;
 	opacity: 0.95;
 }
-nav > ul li div 
+nav > ul li div
 {
 	color: #dfdbd2;
 	display:block;
@@ -84,11 +84,11 @@ nav > ul li div
 	-o-transition: all .3s ease;
 	transition: all .3s ease;
 }
-nav > ul > li > ul > li div:hover 
+nav > ul > li > ul > li div:hover
 {
 	background:#272822;
 }
-nav > ul > li > div span 
+nav > ul > li > div span
 {
 	background:#d14826;
 	display:block;
@@ -103,7 +103,7 @@ nav > ul > li > div span
 	-o-transition: all .3s ease;
 	transition: all .3s ease;
 }
-nav > ul > li > div > .icon 
+nav > ul > li > div > .icon
 {
 	display:block;
 	line-height:45px;
@@ -120,7 +120,7 @@ a:link {
 a:visited {
     color: #dfdbd2;
 }
-nav > ul > li > div:hover > span 
+nav > ul > li > div:hover > span
 {
 	top:0;
 }
@@ -201,7 +201,7 @@ nav > ul > li > div:hover > span
   padding: 0px;
   list-style:none;
 }
-#dialogBox label 
+#dialogBox label
 {
   padding: 0px;
   display: block;
@@ -217,7 +217,7 @@ nav > ul > li > div:hover > span
 }
 .tableList li
 {
-  width: 110px; 
+  width: 110px;
   margin: 5px;
   display: inline-block;
   vertical-align: top;
@@ -242,7 +242,7 @@ nav > ul > li > div:hover > span
 {
     border-radius: 0px;
 }
-.ui-dialog 
+.ui-dialog
 {
     color: #dfdbd2;
     background: #4e4c46;
@@ -310,4 +310,50 @@ nav > ul > li > div:hover > span
     padding: 10;
     bottom: 0;
     position: absolute;
+}
+
+/* The axis view helper */
+.viewhelper
+{
+	position: absolute;
+	z-index: 50;
+	left:20;
+	top:20;
+	height:128px;
+	width:128px;
+	border: 1px solid rgb(110, 109, 109);
+
+	backdrop-filter: sepia(90%);
+}
+
+.viewhelper > *.viewhelper_xy
+{
+	left: 10;
+	top: 10;
+}
+
+.viewhelper > *.viewhelper_xz
+{
+	left: 10;
+	bottom: 10;
+}
+
+.viewhelper > *.viewhelper_xy,
+.viewhelper > *.viewhelper_xz
+{
+	position: absolute;
+	z-index: 51;
+	cursor:hand;
+	padding:0.2rem;
+	color: #232421;
+	background-color: #707070;
+	opacity: 0.7;
+	font-size:larger;
+	border-radius: 0.5rem;
+	font-weight: bold;
+}
+.viewhelper > *.viewhelper_xy:hover,
+.viewhelper > *.viewhelper_xz:hover
+{
+	opacity: 1;
 }

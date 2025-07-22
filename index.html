@@ -12,7 +12,7 @@
     <script src="js/libs/lz-string.min.js"></script>
     <script src="js/libs/ace/ace.js"></script>
     <script src="js/libs/jquery-1.12.0.min.js"></script>
-    <script src="js/libs/jquery-ui.min.js"></script> 
+    <script src="js/libs/jquery-ui.min.js"></script>
     <script src="js/libs/three.js"></script>
     <script src="js/libs/dat.gui.js"></script>
 	<script src="js/libs/stats.min.js"></script>
@@ -20,7 +20,7 @@
 	<script src="js/libs/TrackballControls.js"></script>
     <script src="js/libs/OBJExporter.js"></script>
     <script src="js/libs/STLBinaryExporter.js"></script>
-    
+
     <script src="js/cws.js"></script>
 	<script src="js/storage.js"></script>
 	<script src="js/project.js"></script>
@@ -33,14 +33,15 @@
     <script src="js/printer.js"></script>
     <script src="js/motion.js"></script>
 	<script src="js/controller.js"></script>
+	<script src="js/viewdirection.js"></script>
 	<script src="js/ui.js"></script>
-	
+
 	<script type="text/javascript">
 	var controller,ui;
 	// TODO
 	// Lathe tool
 	// Check input forms
-	window.addEventListener("load", (function () 
+	window.addEventListener("load", (function ()
 	{
         controller = new CWS.Controller(
         	new CWS.CodeEditor(),
@@ -49,17 +50,17 @@
         	new CWS.Motion(),
         	true
         	);
-		
+
 		ui = new CWS.UI(controller);
 		var stats = ui.createStats(true);
 
-		function onWindowResize() 
+		function onWindowResize()
 		{
 			controller.windowResize();
 			ui.resize();
 		}
 
-		function animate() 
+		function animate()
 		{
 			requestAnimationFrame( animate );
 			stats.update();

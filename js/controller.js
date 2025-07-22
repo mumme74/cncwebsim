@@ -64,6 +64,9 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
             controller.save(true);
         });
         this.autoRun = autoRun;
+
+		this.dirPointer = new ViewHelper(this.renderer.camera,
+			document.querySelector("#canvasContainer"));
     };
 
 CWS.Controller.prototype =
@@ -364,6 +367,7 @@ CWS.Controller.prototype.render = function(forceUpdate)
             this.renderer.render(this.controls);
             // this.controls.controlUpdated = false;
         // }
+        this.dirPointer.render();
     };
 
 CWS.Controller.prototype.save = function(forceSave)
