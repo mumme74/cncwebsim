@@ -111,6 +111,9 @@ CWS.UI = function (controller)
 		{
 			controller.runAnimation();
 		});
+		$("#stopIcon").click(function(){
+			controller.interpreterStop();
+		});
 		$("#continueIcon").click(function () {
 			controller.interpreterContinue();
 		});

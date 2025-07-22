@@ -430,6 +430,12 @@ CWS.Controller.prototype.interpreterStepOut = function()
         this.motion.stepOut();
     }
 
+CWS.Controller.prototype.interpreterStop = function()
+    {
+        this.motion.stop();
+        this.editor.setCurrentLine(-1, this.motion.state);
+    }
+
 CWS.Controller.prototype.updateWorkpieceDraw = function()
     {
         var mesh;

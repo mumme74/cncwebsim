@@ -12,7 +12,8 @@ class MotionInterp {
 	// states that motion can have, including debug
 	static States = {
 		Idle:"idle", Running:"running", Continue: "continue",
-		Next:"next", StepOut:"stepout", Halted: "halted"
+		Next:"next", StepOut:"stepout", Halted: "halted",
+		Stop:"stop"
 	};
 
 	constructor() {
@@ -35,7 +36,7 @@ class MotionInterp {
 			const vlu = this.interpreter.parameterVlu(varName);
 			return postMessage({extra:varName, value: vlu, error:[]});
 		}
-		var result = "OK";
+		var result = {error:[{line:-1, msg:"Unrecognized command"}]};
 		switch (ev.data.state) {
 		case MotionInterp.States.Running:
 			result = this.run();
@@ -49,9 +50,12 @@ class MotionInterp {
 		case MotionInterp.States.StepOut:
 			result = this.stepOut();
 			break;
+		case MotionInterp.States.Stop:
+			result = this.stop();
+			break;
 		case MotionInterp.States.Idle: // fallthrough
 		default:
-			state = MotionInterp.States.Idle;
+			this.state = MotionInterp.States.Idle;
 		}
 		postMessage(result);
 	}
@@ -84,7 +88,8 @@ class MotionInterp {
 
 		const oldPos = this.interpreter.getPos() - this.noMoveCmdCnt,
 			  int = this.interpreter,
-		      lineNr = this.interpreter.outputCommands[0].cmd.line.lineNumber;
+		      lineNr = this.interpreter.outputCommands[
+					this.interpreter.getPos()].cmd.line.lineNumber;
 		let cm, cmd;
 		while (cm = int.getCommand()) {
 			cmd = cm; // ensure we have last command even when we are end
@@ -128,6 +133,11 @@ class MotionInterp {
 		this.interpreter.setPos(startIdx);
 
 		return this.#calcAllCmds(end+1, true);
+	}
+
+	stop() {
+		this.state =  MotionInterp.States.Idle;
+		return {};
 	}
 
 	#parseCode() {

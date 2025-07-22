@@ -5,7 +5,8 @@
 // states that motion can have, including debug
 CWS.MotionStates = {
 	Idle:"idle", Running:"running", Continue: "continue",
-	Next:"next", StepOut:"stepout", Halted: "halted"
+	Next:"next", StepOut:"stepout", Halted: "halted",
+	Stop:"stop"
 };
 
 CWS.Motion = function ()
@@ -51,6 +52,19 @@ CWS.Motion.prototype.stepOut = function ()
 	{
 		if (this.state === CWS.MotionStates.Halted)
 			this.postMessage(CWS.MotionStates.StepOut);
+	}
+
+CWS.Motion.prototype.stop = function()
+	{
+		if (this.state === CWS.MotionStates.Halted) {
+			this.worker.postMessage({state:CWS.MotionStates.Stop});
+		} else if (this.state !== CWS.MotionStates.Idle) {
+			this.worker.terminate();
+			this.worker = new Worker("./js/motionWorker.js");
+		}
+		this.state = CWS.MotionStates.Idle;
+		this.inflight = false;
+		this.data = null;
 	}
 
 CWS.Motion.prototype.setData = function (data)
