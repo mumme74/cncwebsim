@@ -64,7 +64,7 @@ class MotionInterp {
 		this.#parseCode();
 		this.#runAllCmds();
 		const res = this.#calcAllCmds(
-			this.interpreter.outputCommands.length, false);
+			this.interpreter.outputCommands.length, false, -1);
 		return res;
 	}
 
@@ -75,7 +75,7 @@ class MotionInterp {
 			this.#runAllCmds(); // need to run all cmds to get commands length
 		}
 		const res = this.#calcAllCmds(
-			this.interpreter.outputCommands.length, true);
+			this.interpreter.outputCommands.length, true, -1);
 		return res;
 	}
 
@@ -89,7 +89,12 @@ class MotionInterp {
 		const oldPos = this.interpreter.getPos() - this.noMoveCmdCnt,
 			  int = this.interpreter,
 		      lineNr = this.interpreter.outputCommands[
-					this.interpreter.getPos()].cmd.line.lineNumber;
+					this.interpreter.getPos()]?.cmd.line.lineNumber;
+		if (lineNr === undefined) {
+			this.state = MotionInterp.Idle; // already at EOF
+			lineNr = -1;
+		}
+
 		let cm, cmd;
 		while (cm = int.getCommand()) {
 			cmd = cm; // ensure we have last command even when we are end
@@ -122,6 +127,7 @@ class MotionInterp {
 		            atLine: -1, state: this.state};
 		}
 		const startIdx = this.interpreter.getPos();
+		const curLine = this.#getCurrentCmd().cmd.line.lineNumber;
 
 		let cmd;
 		while (cmd = this.interpreter.getCommand()) {
@@ -132,12 +138,19 @@ class MotionInterp {
 		const end = this.interpreter.getPos();
 		this.interpreter.setPos(startIdx);
 
-		return this.#calcAllCmds(end+1, true);
+		return this.#calcAllCmds(end+1, true, curLine);
 	}
 
 	stop() {
 		this.state =  MotionInterp.States.Idle;
 		return {};
+	}
+
+	#getCurrentCmd() {
+		const pos = this.interpreter.getPos();
+		if (pos < this.interpreter.outputCommands.length)
+			return this.interpreter.outputCommands[pos];
+		return -1;
 	}
 
 	#parseCode() {
@@ -165,7 +178,7 @@ class MotionInterp {
 		this.color = new Float32Array(l * 2);
 	}
 
-	#calcAllCmds(end, useBrk) {
+	#calcAllCmds(end, useBrk, ignoreBrkPntLine) {
 		let lineNr = -1, peekLn = -1, cmd;
 		const int = this.interpreter,
 		      startPos = int.getPos() - this.noMoveCmdCnt;
@@ -174,12 +187,12 @@ class MotionInterp {
 			cmd = this.interpreter.getCommand();
 			// only break on this commands that have another line
 			// G02-G03 produces many cmds for the same line
-			lineNr = cmd.cmd.line.lineNumber-1;
+			lineNr = cmd.cmd.line.lineNumber;
 			peekLn = int.outputCommands.length > int.getPos() ?
 				int.outputCommands[int.getPos()].cmd.line.lineNumber : -1;
 			if (useBrk &&
 				this.breakPnts.indexOf(lineNr) !== -1 &&
-				peekLn !== lineNr)
+				peekLn !== lineNr && peekLn !== ignoreBrkPntLine)
 			{
 				this.state = MotionInterp.States.Halted;
 				break;

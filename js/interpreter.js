@@ -906,7 +906,7 @@ CWS.Interpreter.prototype.m97 = function (prgCmd)
 				`Procedure at : N${N} not found!`, cmd);
 		const line = this.parser.nLinesToLines[N];
 		const idx = this.parser.firstCmdFor(line);
-		this._subRoutineLoop(L, idx);
+		this._subRoutineLoop(L, idx, prgCmd);
 	}
 
 CWS.Interpreter.prototype.m98 = function (prgCmd)
@@ -917,20 +917,23 @@ CWS.Interpreter.prototype.m98 = function (prgCmd)
 		if (!(P in this.parser.procedures))
 			throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
 				`Procedure: O${P} not found!`, cmd);
-		this._subRoutineLoop(L, this.parser.procedures[P]);
+		this._subRoutineLoop(L, this.parser.procedures[P], prgCmd);
 	}
 
-CWS.Interpreter.prototype._subRoutineLoop = function(loops, pos)
+CWS.Interpreter.prototype._subRoutineLoop = function(loops, pos, prgCmd)
 	{
 		// loop L times
 		for (let i = 0; i < loops;  ++i) {
 			let cmd;
+			this.pushNoMoveCmd(prgCmd);
 			this.pushCallFrame(this.parser.pos());
 			const frmLen = this.callFrameStack.length;
 			this.parser.setPos(pos);
 			while (this.callFrameStack.length == frmLen &&
 				   (cmd=this.parser.getCommand()))
-				this.runCommand(cmd)
+			{
+				this.runCommand(cmd);
+			}
 		}
 	};
 
