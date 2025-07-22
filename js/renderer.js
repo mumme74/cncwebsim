@@ -57,7 +57,7 @@ CWS.Renderer = function (id,options)
 		this.width = options.width || 512;
 		this.height = options.height || 512;
 
-		this.camera = new THREE.PerspectiveCamera(20, this.width / this.height, 0.1, 2000);
+		this.camera = new THREE.OrthographicCamera(20, this.width / this.height, 0.1, 2000);
 		this.camera.position.x = 0;
 		this.camera.position.y = 0;
 		this.camera.position.z = 100;
