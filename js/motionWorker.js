@@ -26,6 +26,7 @@ class MotionInterp {
 		this.breakPnts   = data.breakPnts.sort();
 		this.errList     = [];
 		this.noMoveCmdCnt = 0;
+		this.interpreter.errList = this.errList;
 	}
 
 	onmessage(ev) {

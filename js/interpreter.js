@@ -1,3 +1,4 @@
+"use strict"
 /**
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
  */
@@ -368,104 +369,202 @@ CWS.Interpreter.prototype.g1  = function (prgCmd)
 	};
 
 
-CWS.Interpreter.prototype._arc  = function (prgCmd, ctype)
+CWS.Interpreter.prototype._arc  = function (prgCmd, gNumber)
 	{
 	if (this.move3dPrinter(prgCmd))
 		return;
 
 	const cmd = this.coordinatesToAbsolute(prgCmd);
-	var x = cmd.param.xyz[this.axisXYZ_0]-this.position[this.axisXYZ_0];
-	var y = cmd.param.xyz[this.axisXYZ_1]-this.position[this.axisXYZ_1];
-	var z = cmd.param.xyz[this.axisXYZ_linear];
-	var i,j;
+
+	// make Americans happy,
+	for (const k of Object.keys(cmd.param.ijk))
+		cmd.param.ijk[k] *= this.modal.units;
+
+	// relative coordinates
+    const x = cmd.param.xyz[this.axisXYZ_0] - this.position[this.axisXYZ_0],
+          y = cmd.param.xyz[this.axisXYZ_1] - this.position[this.axisXYZ_1],
+          z = cmd.param.xyz[this.axisXYZ_linear],
+	      startZ = this.position[this.axisXYZ_linear];
 
 	if (cmd.param.r !== undefined)
 	{
 		cmd.param.r *= this.modal.units;
-		var d2=x*x+y*y;
-		var h_x2_div_d = 4.0*cmd.param.r*cmd.param.r-x*x-y*y;
-		if (h_x2_div_d < 0)
+		const r = cmd.param.r;
+
+		// Pythagoras
+		const dist = Math.sqrt(x*x + y*y);
+		if (r < dist / 2)
 			throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
-				"Wrong radius", cmd.line.rawLine);
-		h_x2_div_d = Math.sqrt(h_x2_div_d)/Math.sqrt(d2)*this.invertRadius;
-		if (ctype === 3) h_x2_div_d = -h_x2_div_d;
-		if (cmd.param.r < 0)
-		{
-            h_x2_div_d = -h_x2_div_d;
-            cmd.param.r = -cmd.param.r;
-        }
-        cmd.param.ijk[this.axisIJK_0] = 0.5*(x+(y*h_x2_div_d));
-        cmd.param.ijk[this.axisIJK_1] = 0.5*(y-(x*h_x2_div_d));
+				"Radius too small", cmd.line.rawLine);
+
+		// using consine theorem to find angle of th pie slice formed by trangle
+		// between start and end point and where arc cerntoer should be
+		// Fing out angle between start and end, divide by 2, subtract with result
+		// above divided by 2. Should now have angle from startpoint to arc center
+		// use normal sine cosine and radius to figure out where centerpoint
+		// should be.
+		//   l is length (distance) between start and end
+		//   o is angle from curpos and endpos     => o = atan2(y,x)
+		//   v is angle of the triangle pie slice (start-end-arccenter)
+		//        => v = acos(r²+r²-l²) /2r²) ; cosine theorem
+		//   b is angle from cur pos line to arc center line in pie, should be half o
+		//        => b = o / 2
+		//   a is angle from cur pos and arc center point.
+		//        => a = b + v/2
+		// center pnt.x = sin a * r, pnt.y = cos a * r
+
+		const oAngle = gNumber === 3 ? Math.atan2(x,y) : Math.atan2(y,x),
+		      r2 = r*r,
+			  lDist2 = dist*dist,
+			  vAngle = Math.acos((r2+r2-lDist2) / (2*r2)),
+			  aAngle = Math.PI - oAngle - vAngle / 2;
+
+		const center = {
+			x: Math.sin(aAngle) * r,
+			y: Math.cos(aAngle) * r
+		};
+
+		if (isNaN(aAngle))
+			throw CWS.ErrorInterpreter(cmd.line.lineNumber,
+				`Impossible to find center point of arc with given parameters`);
+
+        cmd.param.ijk[this.axisIJK_0] = gNumber === 3 ? center.y : center.x;
+        cmd.param.ijk[this.axisIJK_1] = gNumber === 3 ? center.x : center.y;
 	}
 
-	var center_axis0 = this.position[this.axisXYZ_0] + cmd.param.ijk[this.axisIJK_0];
-  	var center_axis1 = this.position[this.axisXYZ_1] + cmd.param.ijk[this.axisIJK_1];
-  	var r_axis0 = -cmd.param.ijk[this.axisIJK_0];  // Radius vector from center to current location
-  	var r_axis1 = -cmd.param.ijk[this.axisIJK_1];
-  	var rt_axis0 = cmd.param.xyz[this.axisXYZ_0] - center_axis0;
-  	var rt_axis1 = cmd.param.xyz[this.axisXYZ_1] - center_axis1;
+	// Where ijk resides in 3d space
+	const centerPos = {
+		x:this.position[this.axisXYZ_0] + (cmd.param.ijk[this.axisIJK_0] ?? 0),
+		y:this.position[this.axisXYZ_1] + (cmd.param.ijk[this.axisIJK_1] ?? 0),
+		z:this.position[this.axisXYZ_linear] + (cmd.param.ijk[this.axisIJK_2] ?? 0)
+	};
+	// Radius vector from center to current location
+	const centerToStart = {
+		x:-(cmd.param.ijk[this.axisIJK_0] ?? 0),
+		y:-(cmd.param.ijk[this.axisIJK_1] ?? 0),
+		z:-(cmd.param.ijk[this.axisIJK_linear] ?? 0)
+	};
+	// how far from centerpos to end in all 3 axis
+	const centerToEnd = {
+		x:(cmd.param.xyz[this.axisXYZ_0] ?? 0) - centerPos.x,
+		y:(cmd.param.xyz[this.axisXYZ_1] ?? 0) - centerPos.y,
+		z:(cmd.param.xyz[this.axisXYZ_linear] ?? 0) - centerPos.z
+	};
 
-  	arc_tolerance=0.0002 // mm
+	// console.log(cmd.line.lineNumber, "s", centerToStart, "c", centerPos, "e", centerToEnd, "ijk",cmd.param.ijk);
+	//   const outCmd1 = this._makeOutCmd(cmd, gNumber, centerPos.x, centerPos.y, centerPos.z);
+	//   this.outputCommands.push(outCmd1);
+	//   const outCmd2 = this._makeOutCmd(cmd, gNumber, cmd.param.xyz.x, cmd.param.xyz.y, centerPos.z);
+	//   this.outputCommands.push(outCmd2);
 
-  	angular_travel = Math.atan2(r_axis0*rt_axis1-r_axis1*rt_axis0, r_axis0*rt_axis0+r_axis1*rt_axis1);
-  	if ((ctype === 2 && angular_travel >= 0.0) ||
-        (ctype === 3 && angular_travel <= 0.0))
-		angular_travel = -angular_travel; // rotate in the correct direction
+	const radius2D = Math.sqrt(Math.pow(centerToStart.x,2)+Math.pow(centerToStart.y,2));
+	if (radius2D <= 0.0002)
+		throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
+			`Radius to small`);
+	const radius3D = radius2D * Math.cos(Math.asin(centerToStart.z/radius2D));
+	if (radius3D <= 0.0 || isNaN(radius3D))
+		throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
+			`G${gNumber} K value makes radius disappear`);
 
-  	segments = Math.floor(Math.abs(0.5*angular_travel*cmd.param.r)/
-                          Math.sqrt(arc_tolerance*(2*cmd.param.r-arc_tolerance)) );
-	theta_per_segment = angular_travel/segments;
-    linear_per_segment = (cmd.param.xyz[this.axisXYZ_linear] - this.position[this.axisXYZ_linear])/segments;
+	const oneRev = 2 * Math.PI;
+	const startToCenterAngle = Math.atan2(centerToStart.y, centerToStart.x);
+	const endToCenterAngle   = Math.atan2(centerToEnd.y, centerToEnd.x);
+	let arcAngle = startToCenterAngle - endToCenterAngle;
+	if (gNumber === 3 && arcAngle > 0)
+		arcAngle = arcAngle - oneRev;
+	else
+	if (gNumber === 2 && arcAngle < 0)
+		arcAngle = oneRev + arcAngle;
+	if (arcAngle === 0.0)
+		arcAngle = gNumber === 3 ? -oneRev : oneRev;
 
-    cos_T = 2.0 - theta_per_segment*theta_per_segment;
-    sin_T = theta_per_segment*0.16666667*(cos_T + 4.0);
-    cos_T *= 0.5;
+	// We split to segments (algorithm generally works like this)
+	//   A is minimum segment arc tolerance, ex: 0.2deg
+	//   L is minimum travel allowed in a segment
+	//   v is the angle of the arc             => v=atan2(y,x)
+	//   l is the length traveled in arc       => l=(2*r*pi)/v
+	//   v1 is the angle for each segment      => v1 = A
+	//   n is number segments                  => n=|v/A|
+	//   l1 is length traveled in each segment => l1=l/n
+	//
+	//   if l1 < L reduce num of segments
+	//      recaluculate n                     => n=|l/L|
+	//      recalculate v1                     => v1=v/n
+	//      recalculate l1                     => l1=l/n
 
-    var sin_Ti;
-    var cos_Ti;
-    var r_axisi;
-    var i;
-    var count = 0;
+  	const minTravel = 0.0002, // mm, L in description
+		  // min angle in radians, A in desc.
+	      minAngle  = (0.2 * Math.PI) / 180,
+		  // total travel, l in desc.
+		  travelLen = (2*radius3D*Math.PI) / arcAngle;
 
-    for (i = 1; i<segments; i++)
+		  // angle per segment, v1 in desc
+	let segmAngle = arcAngle >= 0 ? minAngle : -minAngle,
+	      // How many segments, n in desc
+	    numSegm = Math.abs(arcAngle / segmAngle),
+		  // how long a segment is
+		segmLen = travelLen / numSegm;
+
+	if (Math.abs(segmLen) < minTravel) {
+		numSegm = travelLen / minTravel;
+		segmLen = arcAngle / numSegm;
+	}
+
+	const moveZPerSegment = (z - this.position[this.axisXYZ_linear]) / numSegm;
+
+	// for rotating a matrix in the loop
+    const cosTmp = 2.0 - segmAngle*segmAngle;
+    const sin_T = segmAngle*0.16666667*(cosTmp + 4.0);
+    const cos_T = cosTmp * 0.5;
+
+    let sin_Ti, cos_Ti, count = 0,
+	    posx = centerPos.x,
+		posy = centerPos.y,
+		posz = centerPos.z;
+
+    for (let i = 1; i <= numSegm; i++)
     { // Increment (segments-1).
 
       if (count < this.N_ARC_CORRECTION)
       {
         // Apply vector rotation matrix. ~40 usec
-        r_axisi = r_axis0*sin_T + r_axis1*cos_T;
-        r_axis0 = r_axis0*cos_T - r_axis1*sin_T;
-        r_axis1 = r_axisi;
+        const r_axisi = posx * sin_T + posy * cos_T;
+        posx = posx * cos_T - posy * sin_T;
+        posy = r_axisi;
         count++;
       }
       else
       {
         // Arc correction to radius vector. Computed only every N_ARC_CORRECTION increments. ~375 usec
         // Compute exact location by applying transformation matrix from initial radius vector(=-offset).
-        cos_Ti = Math.cos(i*theta_per_segment);
-        sin_Ti = Math.sin(i*theta_per_segment);
-        r_axis0 = -cmd.param.ijk[this.axisIJK_0]*cos_Ti + cmd.param.ijk[this.axisIJK_1]*sin_Ti;
-        r_axis1 = -cmd.param.ijk[this.axisIJK_0]*sin_Ti - cmd.param.ijk[this.axisIJK_1]*cos_Ti;
+        cos_Ti = Math.cos(i * segmAngle - startToCenterAngle);
+        sin_Ti = -Math.sin(i * segmAngle - startToCenterAngle);
+        posx = centerPos.x + radius3D * cos_Ti;
+        posy = centerPos.y + radius3D * sin_Ti;
         count = 0;
       }
 
-      var pos={};
-      pos[this.axisXYZ_0]=center_axis0+r_axis0;
-      pos[this.axisXYZ_1]=center_axis1+r_axis1;
-      pos[this.axisXYZ_linear]=linear_per_segment*i+z;
-
-	  const outCmd = this._makeOutCmd(cmd, ctype, pos.x, pos.y, pos.z);
+      posz = moveZPerSegment * i + startZ;
+	  const outCmd = this._makeOutCmd(cmd, gNumber, posx, posy, posz);
 	  this.outputCommands.push(outCmd);
     }
 
+	if (!cmd.param.ijk[this.axisIJK_linear] && (
+		Math.abs(this.position[this.axisXYZ_0] - cmd.param.xyz.x) > 0.2 ||
+        Math.abs(this.position[this.axisXYZ_1] - cmd.param.xyz.y) > 0.2 ||
+		Math.abs(this.position[this.axisXYZ_linear] - cmd.param.xyz.z) > 0.2)
+	)
+		this.errList.push(new CWS.ErrorInterpreter(cmd.line.lineNumber,
+			`Arc does not close properly`));
+
 	const outCmd = this._makeOutCmd(
-		cmd, ctype, cmd.param.xyz.x, cmd.param.xyz.y, cmd.param.xyz.z);
+		cmd, gNumber, cmd.param.xyz.x, cmd.param.xyz.y, cmd.param.xyz.z);
 
 	this.outputCommands.push(outCmd);
 
-  	this.position.x=cmd.param.xyz.x;
-  	this.position.y=cmd.param.xyz.y;
-	this.position.z=cmd.param.xyz.z;
+  	//this.position.x = cmd.param.xyz.x;
+  	//this.position.y = cmd.param.xyz.y;
+	//this.position.z = cmd.param.xyz.z;
 	}
 
 CWS.Interpreter.prototype.g2  = function (prgCmd)
