@@ -5,11 +5,11 @@
 // Based of an example from ViewHelper in Threejs
 
 class ViewHelper {
-    constructor(editorCamera, container ) {
+    constructor(editor, container ) {
 		this.dim = 128;
         Object.freeze(this.dim);
 
-        this.editorCamera = editorCamera;
+        this.editor = editor;
         this.container = document.createElement('div');
         this.container.name='#dirhelper';
         this.container.className = 'viewhelper';
@@ -122,12 +122,12 @@ class ViewHelper {
     }
 
 	render () {
-        this.scene.quaternion.copy( this.editorCamera.quaternion).inverse();
+        this.scene.quaternion.copy( this.editor.camera.quaternion).inverse();
 
         this.scene.updateMatrixWorld();
 
         this.point.set( 0, 0, 1 );
-        this.point.applyQuaternion( this.editorCamera.quaternion );
+        this.point.applyQuaternion( this.editor.camera.quaternion );
 
         for ( const ch of "xyz") {
             const opacP = this.point[ch] >= 0 ? 1 : 0.5,
@@ -163,14 +163,14 @@ class ViewHelper {
 
 
         this.rotateTowards(this.q1, this.q2, step );
-        this.editorCamera.position
+        this.editor.camera.position
             .set( 0, 0, 1 )
             .applyQuaternion( this.q1 )
             .multiplyScalar(this.radius )
             .add(focusPoint);
 
         // animate orientation
-        this.rotateTowards(this.editorCamera.quaternion,
+        this.rotateTowards(this.editor.camera.quaternion,
                            this.targetQuaternion, step);
 
         if (this.angleTo(this.q1, this.q2) === 0)
@@ -244,12 +244,12 @@ class ViewHelper {
 
         //
 
-        this.radius = this.editorCamera.position.distanceTo(focusPoint);
+        this.radius = this.editor.camera.position.distanceTo(focusPoint);
         this.targetPosition.multiplyScalar( this.radius ).add(focusPoint);
 
         this.dummy.position.copy(focusPoint);
 
-        this.dummy.lookAt(this.editorCamera.position);
+        this.dummy.lookAt(this.editor.camera.position);
         this.q1.copy(this.dummy.quaternion);
 
         this.dummy.lookAt(this.targetPosition);

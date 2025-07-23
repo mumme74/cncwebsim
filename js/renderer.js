@@ -7,17 +7,28 @@ CWS.Renderer = function (id,options)
 	{
 		options = options || {};
 
-		this.displayWireframe = options.displayWireframe===undefined?true:options.displayWireframe;
+		this.container = document.getElementById("canvasContainer");
+		const rect  = this.container.getBoundingClientRect();
+		this.width  = options.width  || rect.width;
+		this.height = options.height || rect.height;
+
+		this.controller = null; // set by controller in constructor
+
+		this.displayWireframe = options.displayWireframe===undefined
+							  ? true : options.displayWireframe;
 
 		this.renderer = new THREE.WebGLRenderer({clearColor: 0xffffff,antialias: true });
 		// this.renderer.domElement.style.background = "#ffffff";
 		this.renderer.autoClear = true;
 		this.renderer.setClearColor( 0xffffff );
 		this.renderer.setPixelRatio( window.devicePixelRatio );
-		this.renderer.setSize( window.innerWidth, window.innerHeight );
+		this.renderer.setSize(this.width, this.height);
 
 		this.renderer.domElement.id=id;
 		this.renderer.domElement.style['z-index']=41;
+
+        // Add the renderer to the container
+        this.container.appendChild(this.renderer.domElement);
 
 		this.scene = new THREE.Scene();
 
@@ -54,10 +65,37 @@ CWS.Renderer = function (id,options)
 		// directionalLight.position.normalize();
 		// this.scene.add( directionalLight );
 
-		this.width = options.width || 512;
-		this.height = options.height || 512;
+		// create 2 cameras so we can switch later.
+		this.orthoCam = new THREE.OrthographicCamera(
+						-this.width/2, this.width/2,
+						this.height/2, -this.height/2,
+						0.1, 20000);
+		this.persCam = new THREE.PerspectiveCamera(20,
+			this.width / this.height, 0.1, 20000);
+		this.camera = this.persCam;
 
-		this.camera = new THREE.OrthographicCamera(20, this.width / this.height, 0.1, 2000);
+		// Create controls
+        this.controls = new THREE.TrackballControls(
+			this.camera ,this.renderer.domElement);
+        this.controls.rotateSpeed = 5.0;
+        this.controls.zoomSpeed = 2;
+        this.controls.panSpeed = 0.4;
+        this.controls.noZoom = false;
+        this.controls.noPan = false;
+        this.controls.staticMoving = true;
+        this.controls.dynamicDampingFactor = 0.3;
+
+		//zoom for orthocam
+		let lastDistance = this.orthoCam.position
+							   .distanceTo(this.controls.target);
+		this.controls.addEventListener('change', (ev)=>{
+			const distance = this.orthoCam.position
+						         .distanceTo(this.controls.target);
+			if (Math.abs(lastDistance - distance) > 0.001)
+				this.updateFrustum(); // only on zoom
+			lastDistance = distance;
+    	});
+
 		this.camera.position.x = 0;
 		this.camera.position.y = 0;
 		this.camera.position.z = 100;
@@ -77,6 +115,14 @@ CWS.Renderer.prototype =
 	};
 
 CWS.Renderer.prototype.constructor = CWS.Renderer;
+
+CWS.Renderer.prototype.setController = function (controller)
+	{
+		this.controller = controller;
+		this.setCamera(this.controller.cameraType);
+		this.setGridHelper(this.controller.gridHelper,
+						   this.controller.gridInInches);
+	}
 
 CWS.Renderer.prototype.lookAtLathe = function (dimensions)
 	{
@@ -115,20 +161,84 @@ CWS.Renderer.prototype.lookAt3DPrinter = function (center,radius)
 		this.camera.updateProjectionMatrix();
 	};
 
+CWS.Renderer.prototype.updateFrustum = function() {
+	const distance = this.orthoCam.position.distanceTo(this.controls.target);
+	const frust = this.frustrumFromPersCam(distance);
+    this.orthoCam.top = frust.height;
+    this.orthoCam.bottom = -frust.height;
+    this.orthoCam.left = -frust.width;
+    this.orthoCam.right = frust.height;
+    this.camera.updateProjectionMatrix();
+  }
+
+
+CWS.Renderer.prototype.frustrumFromPersCam = function(distance)
+	{
+    	const sz = this.renderer.getSize()
+		      aspect = sz.width / sz.height;
+		if (!distance)
+			distance = this.persCam.position.distanceTo(
+							this.controls.target);
+
+		const vFov = (this.persCam.fov * Math.PI) / 180,
+			  height = Math.tan(vFov / 2) * distance * 2,
+			  width = height * this.persCam.aspect;
+		return {width, height};
+	}
+
+CWS.Renderer.prototype.toOrthographic = function()
+	{
+		const frust = this.frustrumFromPersCam();
+		this.orthoCam.position.copy(this.persCam.position);
+
+		const halfWidth = frust.width / 2;
+		const halfHeight = frust.height / 2;
+		this.orthoCam.top = halfHeight;
+		this.orthoCam.bottom = -halfHeight;
+		this.orthoCam.left = -halfWidth;
+		this.orthoCam.right = halfWidth;
+		this.orthoCam.zoom = 1;
+		this.orthoCam.lookAt(this.controls.target);
+		this.orthoCam.updateProjectionMatrix();
+		this.camera = this.orthoCam;
+		this.controls.object = this.orthoCam;
+	}
+
+CWS.Renderer.prototype.toPerspective = function()
+	{
+		const oldY = this.persCam.position.y;
+		this.persCam.position.copy(this.orthoCam.position);
+		this.persCam.position.y = oldY / this.orthoCam.zoom;
+		this.persCam.updateProjectionMatrix();
+		this.camera = this.persCam;
+		this.controls.object = this.persCam;
+	}
+
 CWS.Renderer.prototype.setCamera = function (camera)
 	{
-		if (camera=="Perspective")
-			this.camera.toPerspective();
-		else if (camera=="Orthographic")
-			this.camera.toOrthographic();
-	};
+		if ((camera=="Perspective" || camera === false) &&
+			this.camera == this.orthoCam
+		)
+			this.toPerspective();
+		else if ((camera=="Orthographic" || camera === true) &&
+			this.camera == this.persCam
+		)
+			this.toOrthographic();
+	}
 
 CWS.Renderer.prototype.setSize = function (width,height)
 	{
 		this.width = width;
 		this.height = height;
-		this.camera.aspect = this.width / this.height;
-		this.camera.updateProjectionMatrix();
+		this.persCam.aspect = this.width / this.height;
+		this.persCam.updateProjectionMatrix();
+
+		const frust = this.frustrumFromPersCam();
+		this.orthoCam.left   = -frust.width/2;
+		this.orthoCam.right  = frust.width/2;
+		this.orthoCam.top    = frust.height/2;
+		this.orthoCam.bottom = -frust.height/2;
+		this.orthoCam.updateProjectionMatrix();
 		this.renderer.setSize( this.width, this.height );
 	};
 
@@ -142,7 +252,7 @@ CWS.Renderer.prototype.removeMesh = function (meshName)
 		}
 	};
 
-CWS.Renderer.prototype.render = function (controls)
+CWS.Renderer.prototype.render = function ()
 	{
 		if (this['2DWorkpiece'] && this['2DWorkpiece'].animation)
 		{
@@ -152,6 +262,8 @@ CWS.Renderer.prototype.render = function (controls)
 		{
 			this['3DWorkpiece'].animation.next();
 		}
+
+        this.controls.update();
 		this.renderer.render( this.scene, this.camera );
 	};
 
@@ -178,3 +290,17 @@ CWS.Renderer.prototype.addMesh = function (meshName,mesh)
 			this.scene.add(mesh);
 		}
 	};
+
+CWS.Renderer.prototype.setGridHelper = function (on, inInches)
+	{
+		if (this.gridHelper) {
+			this.scene.remove(this.gridHelper);
+			this.gridHelper.dispose();
+			delete this.gridHelper;
+		}
+
+		if (on) {
+			this.gridHelper = new UnitGrid(inInches, 500);
+			this.scene.add(this.gridHelper);
+		}
+	}

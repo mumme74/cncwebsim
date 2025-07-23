@@ -8,7 +8,6 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
 		this.editor = editor;
 		this.renderer = renderer;
         this.motion = motion;
-        this.motion.setController(this);
         this.saveFlag = 0;
 
         // ide settings
@@ -16,17 +15,12 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
         this._run3D = storage.getObjData("ideSettings", "_run3d", true);
         this._run2D = storage.getObjData("ideSettings", "_run2D", true);
         this._runWireframe = storage.getObjData("ideSettings", "_runWireframe", true);
+        this._cameraType = storage.getObjData("ideSettings", "_cameraType", false);
+        this._gridHelper = storage.getObjData("ideSettings", "_gridHelper", true);
+        this._gridInInches = storage.getObjData("ideSettings", "_gridInInches", false);
 
         this.createDatGUI();
-        // Create controls
-        this.controls = new THREE.TrackballControls( this.renderer.camera ,this.renderer.domElement);
-        this.controls.rotateSpeed = 5.0;
-        this.controls.zoomSpeed = 2;
-        this.controls.panSpeed = 0.4;
-        this.controls.noZoom = false;
-        this.controls.noPan = false;
-        this.controls.staticMoving = true;
-        this.controls.dynamicDampingFactor = 0.3;
+
         // Init the storage
         if (this.storage.isFirstRun)
             {
@@ -46,8 +40,6 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
         {
             controller.runInterpreter();
         });
-        // Add the renderer to the container
-        document.getElementById("canvasContainer").appendChild(renderer.domElement);
         // Set renderer size
         this.windowResize();
         // Save changes every 60 seconds
@@ -65,7 +57,12 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
         });
         this.autoRun = autoRun;
 
-		this.dirPointer = new ViewHelper(this.renderer.camera,
+        // notify subitems about our existance, so they can set there defaults.
+        this.renderer.setController(this);
+        this.motion.setController(this);
+
+        // finally when renderer finished it's setup, create axis viewhelper
+		this.dirPointer = new ViewHelper(this.renderer,
 			document.querySelector("#canvasContainer"));
     };
 
@@ -117,6 +114,36 @@ CWS.Controller.prototype =
                 this.machine.meshWorkpiece.visible = false;
             }
         },
+        get cameraType()
+        {
+            return this._cameraType;
+        },
+        set cameraType(val)
+        {
+            this.storage.setObjData("ideSettings", "_cameraType", val);
+            this._cameraType = val;
+            this.renderer.setCamera(val);
+        },
+        get gridHelper()
+        {
+            return this._gridHelper;
+        },
+        set gridHelper(vlu)
+        {
+            this.storage.setObjData("ideSettings", "_gridHelper", vlu);
+            this._gridHelper = vlu;
+            this.renderer.setGridHelper(vlu, this._gridInInches);
+        },
+        get gridInInches()
+        {
+            return this._gridInInches;
+        },
+        set gridInInches(vlu)
+        {
+            this.storage.setObjData("ideSettings", "_gridInInches", vlu);
+            this._gridInInches = vlu;
+            this.renderer.setGridHelper(this._gridHelper, vlu);
+        }
     };
 
 CWS.Controller.prototype.constructor = CWS.Controller;
@@ -152,7 +179,7 @@ CWS.Controller.prototype.openProject = function(projectName)
 
 CWS.Controller.prototype.loadMachine = function()
     {
-        this.controls.reset();
+        this.renderer.controls.reset();
         if (this.storage.machineType=="Lathe")
         {
             document.getElementById('machineIcon').className = "icon-lathe";
@@ -338,6 +365,22 @@ CWS.Controller.prototype.createDatGUI = function ()
             handleColorChange( material3D.emissive, "emissive" ) );
         folder.add( material3D, 'wireframe' );
         //        folder.add( material3D, 'refractionRatio', 0, 1 );
+        const setData = {
+            'Orthographic camera': this.cameraType,
+            'Gridhelper': this.gridHelper,
+            'Grid in Inches': this.gridInInches
+        }
+
+        const settings = gui.addFolder("Settings");
+        settings.add(setData, 'Orthographic camera').onChange((vlu) => {
+            this.cameraType = vlu;
+        });
+        settings.add(setData, 'Gridhelper').onChange((vlu) => {
+            this.gridHelper = vlu;
+        });
+        settings.add(setData, 'Grid in Inches').onChange((vlu) => {
+            this.gridInInches = vlu;
+        });
 
         this.material3D = material3D;
     };
@@ -346,7 +389,6 @@ CWS.Controller.prototype.runGCode = function()
     {
         this.editor.codeChanged();
     };
-
 CWS.Controller.prototype.setEditor = function()
     {
         this.editor.codeChanged();
@@ -355,18 +397,14 @@ CWS.Controller.prototype.setEditor = function()
 CWS.Controller.prototype.windowResize = function()
     {
         var maincanvasdiv = document.getElementById("canvasContainer");
-        this.controls.handleResize();
-        this.renderer.setSize(maincanvasdiv.offsetWidth,maincanvasdiv.offsetHeight);
+        this.renderer.controls.handleResize();
+        this.renderer.setSize(maincanvasdiv.offsetWidth,
+                              maincanvasdiv.offsetHeight);
     };
 
 CWS.Controller.prototype.render = function(forceUpdate)
     {
-        this.controls.update();
-        // if (this.controls.controlUpdated || forceUpdate)
-        // {
-            this.renderer.render(this.controls);
-            // this.controls.controlUpdated = false;
-        // }
+        this.renderer.render();
         this.dirPointer.render();
     };
 
