@@ -1,5 +1,6 @@
 /**
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
+ * @author Fredrik Johansson / github.com/mumme74
  */
 
 
@@ -11,6 +12,7 @@ CWS.Storage = function (options)
         this.useLocalStorage = (options.useLocalStorage===undefined)?true:options.useLocalStorage;
 		// storage can be localStorage or a dictionary
 	    this.storage = {};
+		this._cache = {};
 	    this.isAvailable = false;
 	    this.isFirstRun = false;
 	    this.currentProjectHeaderCache = {};
@@ -147,7 +149,7 @@ CWS.Storage.prototype.storageCheckKeys = function ()
             this.projectsNameCache[data.name] = data.machine.mtype;
 	};
 
-CWS.Storage.prototype.getData = function (key)
+CWS.Storage.prototype.getData = function (key, defaultVlu)
 	{
 		var data = this.storage.getItem(key);
 		if (this.useCompression==true)
@@ -155,7 +157,9 @@ CWS.Storage.prototype.getData = function (key)
 			data = LZString.decompress(data);
 		}
 		data = JSON.parse(data);
-		return data;
+		if (data !== undefined)
+			return data;
+		return defaultVlu;
 	};
 
 // get data from subobject
@@ -176,6 +180,48 @@ CWS.Storage.prototype.saveData = function (key,data)
 		}
 		this.storage.setItem(key,_data);
 	};
+
+CWS.Storage.prototype.defineVariable = function(key, defaultVlu, setCb) {
+	const keys = key.split('.');
+	if (keys.length < 2) {
+		Object.defineProperty(CWS.Storage.prototype, key, {
+			get() {
+				if (key in this._cache)
+					return this._cache[key];
+				 const vlu = this.getData(key, defaultVlu);
+				 if (vlu !== undefined)
+					this._cache[key] = vlu;
+				return vlu;
+			},
+			set(vlu) {
+				this.setData(key, vlu);
+				this._cache[key] = vlu;
+				if (setCb) setCb(vlu);
+			 }
+		});
+		return this.getData(key);
+	}
+
+	Object.defineProperty(CWS.Storage.prototype, keys[1], {
+		get() {
+			if (keys[0] in this._cache && keys[1] in this._cache[keys[0]])
+				return this._cache[keys[0]][keys[1]];
+			const vlu = this.getObjData(keys[0], keys[1], defaultVlu);
+			if (!(keys[0] in this._cache))
+				this._cache[keys[0]] = {}
+			this._cache[keys[0]][keys[1]] = vlu;
+			return vlu;
+		},
+		set(vlu) {
+			this.setObjData(keys[0], keys[1], vlu);
+			if (!(keys[0] in this._cache))
+				this._cache[keys[0]] = {}
+			this._cache[keys[0]][keys[1]] = vlu;
+			if (setCb) setCb(vlu);
+		}
+	});
+	return this.getObjData(keys[0], keys[1], defaultVlu);
+}
 
 // save object data
 CWS.Storage.prototype.setObjData = function (key, objKey, newVlu)

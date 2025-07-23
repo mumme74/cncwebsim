@@ -1,5 +1,6 @@
 /**
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
+ * @author Fredrik Johansson / gihub.com/mumme74
  */
 
 
@@ -119,9 +120,9 @@ CWS.Renderer.prototype.constructor = CWS.Renderer;
 CWS.Renderer.prototype.setController = function (controller)
 	{
 		this.controller = controller;
-		this.setCamera(this.controller.cameraType);
-		this.setGridHelper(this.controller.gridHelper,
-						   this.controller.gridInInches);
+		const store = controller.storage;
+		this.setCamera(store.cameraType);
+		this.setGridHelper(store.gridHelper, store.gridInInches);
 	}
 
 CWS.Renderer.prototype.lookAtLathe = function (dimensions)

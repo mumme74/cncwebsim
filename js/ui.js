@@ -1,5 +1,6 @@
 /**
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
+ * @author Fredrik Johansson / github.com/mumme74
  */
 
 
@@ -57,8 +58,8 @@ CWS.UI = function (controller)
 		});
 		this.settingsButton("#autoRunIcon", "autoRun", function ()
 		{
-			controller.autoRun=!controller.autoRun;
-			if (controller.autoRun)
+			controller.storage.autoRun=!controller.storage.autoRun;
+			if (controller.storage.autoRun)
 				controller.runInterpreter(true);
 		});
 		$("#runIcon").click(function (ev)
@@ -67,17 +68,17 @@ CWS.UI = function (controller)
 		});
 		this.settingsButton("#run2DIcon", "run2D", function (ev)
 		{
-			controller.run2D=!controller.run2D;
+			controller.storage.run2D=!controller.storage.run2D;
 			controller.update2D();
 		});
 		this.settingsButton("#run3DIcon", "run3D", function (ev)
 		{
-			controller.run3D=!controller.run3D;
+			controller.storage.run3D=!controller.storage.run3D;
 			controller.update3D();
 		});
 		this.settingsButton("#wireframeIcon", "runWireframe", function (ev)
 		{
-			controller.runWireframe=!controller.runWireframe;
+			controller.storage.runWireframe=!controller.storage.runWireframe;
 		});
 		$("#runAnimationIcon").click(function (ev)
 		{
@@ -125,11 +126,11 @@ CWS.UI.prototype.settingsButton = function (node, prop, cb)
 		if (!cb) cb = function() {};
 		var _t = this;
 		node = $(node);
-		node.css('color', this.controller[prop] ? "green" : "red");
+		node.css('color', this.controller.storage[prop] ? "green" : "red");
 		node.click(function(event)
 		{
 			cb.call(node, event);
-			node.css('color', _t.controller[prop] ? "green" : "red");
+			node.css('color', _t.controller.storage[prop] ? "green" : "red");
 		});
 	};
 

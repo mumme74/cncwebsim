@@ -1,8 +1,9 @@
 /**
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
+ * @author Fredrik Johansson / github.com/mumme74
  */
 
-CWS.Controller = function (editor,storage,renderer,motion,autoRun)
+CWS.Controller = function (editor,storage,renderer,motion)
 	{
 		this.storage = storage;
 		this.editor = editor;
@@ -11,13 +12,25 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
         this.saveFlag = 0;
 
         // ide settings
-        this._autoRun = storage.getObjData("ideSettings", "_autoRun", false);
-        this._run3D = storage.getObjData("ideSettings", "_run3d", true);
-        this._run2D = storage.getObjData("ideSettings", "_run2D", true);
-        this._runWireframe = storage.getObjData("ideSettings", "_runWireframe", true);
-        this._cameraType = storage.getObjData("ideSettings", "_cameraType", false);
-        this._gridHelper = storage.getObjData("ideSettings", "_gridHelper", true);
-        this._gridInInches = storage.getObjData("ideSettings", "_gridInInches", false);
+        storage.defineVariable("ideSettings.autoRun",      true);
+        storage.defineVariable("ideSettings.run3D",        true);
+        storage.defineVariable("ideSettings.run2D",        true);
+        storage.defineVariable("ideSettings.runWireframe", true,
+            (vlu)=>{this.machine.meshWorkpiece.visible = vlu}
+        );
+        storage.defineVariable("ideSettings.cameraType",   false,
+            (vlu)=>{ this.renderer.setCamera(vlu); }
+        );
+        storage.defineVariable("ideSettings.gridHelper",   true,
+            (vlu)=>{
+                this.renderer.setGridHelper(vlu, this.storage.gridInInches);
+            }
+        );
+        storage.defineVariable("ideSettings.gridInInches", false,
+            (vlu)=>{
+                this.renderer.setGridHelper(this.storage.gridHelper, vlu);
+            }
+        );
 
         this.createDatGUI();
 
@@ -55,7 +68,6 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
                 return;
             controller.save(true);
         });
-        this.autoRun = autoRun;
 
         // notify subitems about our existance, so they can set there defaults.
         this.renderer.setController(this);
@@ -64,86 +76,6 @@ CWS.Controller = function (editor,storage,renderer,motion,autoRun)
         // finally when renderer finished it's setup, create axis viewhelper
 		this.dirPointer = new ViewHelper(this.renderer,
 			document.querySelector("#canvasContainer"));
-    };
-
-CWS.Controller.prototype =
-    {
-        get autoRun()
-        {
-            return this._autoRun;
-        },
-        set autoRun(val)
-        {
-            this.storage.setObjData("ideSettings", "_autoRun", val);
-            this._autoRun = val;
-        },
-        get run2D()
-        {
-            return this._run2D;
-        },
-        set run2D(val)
-        {
-            this.storage.setObjData("ideSettings", "_run2D", val);
-            this._run2D = val;
-            this.update2D();
-        },
-        get run3D()
-        {
-            return this._run3D;
-        },
-        set run3D(val)
-        {
-            this.storage.setObjData("ideSettings", "_run3D", val);
-            this._run3D = val;
-            this.update3D();
-        },
-        get runWireframe()
-        {
-            return this._runWireframe;
-        },
-        set runWireframe(val)
-        {
-            this.storage.setObjData("ideSettings", "_runWireframe", val);
-            this._runWireframe = val;
-            if (this._runWireframe === true)
-            {
-                this.machine.meshWorkpiece.visible = true;
-            }
-            else
-            {
-                this.machine.meshWorkpiece.visible = false;
-            }
-        },
-        get cameraType()
-        {
-            return this._cameraType;
-        },
-        set cameraType(val)
-        {
-            this.storage.setObjData("ideSettings", "_cameraType", val);
-            this._cameraType = val;
-            this.renderer.setCamera(val);
-        },
-        get gridHelper()
-        {
-            return this._gridHelper;
-        },
-        set gridHelper(vlu)
-        {
-            this.storage.setObjData("ideSettings", "_gridHelper", vlu);
-            this._gridHelper = vlu;
-            this.renderer.setGridHelper(vlu, this._gridInInches);
-        },
-        get gridInInches()
-        {
-            return this._gridInInches;
-        },
-        set gridInInches(vlu)
-        {
-            this.storage.setObjData("ideSettings", "_gridInInches", vlu);
-            this._gridInInches = vlu;
-            this.renderer.setGridHelper(this._gridHelper, vlu);
-        }
     };
 
 CWS.Controller.prototype.constructor = CWS.Controller;
@@ -262,26 +194,25 @@ CWS.Controller.prototype.setWorkpieceDimensions = function(dimensions)
 	{
         var workpiece = this.storage.workpiece;
         for (var i in dimensions)
-        {
             workpiece[i] = dimensions[i];
-        }
+
         this.storage.workpiece = workpiece;
         this.machine.updateWorkpieceDimensions();
-        if (this.machine.mtype=="Lathe")
-        {
+        switch (this.machine.mtype) {
+        case "Lathe":
             this.updateWorkpieceDraw();
             this.renderer.lookAtLathe({x:this.storage.workpiece.x,y:this.storage.workpiece.z});
-        }
-        else if (this.machine.mtype=="Mill")
-        {
+            break;
+        case "Mill":
             this.updateWorkpieceDraw();
             this.renderer.lookAtMill({x:this.storage.workpiece.x,
                         y:this.storage.workpiece.y,z:this.storage.workpiece.z});
-        }
-        else if (this.machine.mtype=="3D Printer")
-        {
+            break;
+        case "3D Printer":
             this.runInterpreter();
+            break;
         }
+
         this.updateWireframe();
 	};
 
@@ -339,8 +270,7 @@ CWS.Controller.prototype.createDatGUI = function ()
                 {
                     value = value.replace('#', '0x');
                 }
-                _this.storage.setObjData(
-                    "ideSettings", settKey, parseInt( value ) );
+                _this.storage[`ideSettings.settKey`] = parseInt(value);
                 color.setHex( value );
             };
         };
@@ -366,20 +296,20 @@ CWS.Controller.prototype.createDatGUI = function ()
         folder.add( material3D, 'wireframe' );
         //        folder.add( material3D, 'refractionRatio', 0, 1 );
         const setData = {
-            'Orthographic camera': this.cameraType,
-            'Gridhelper': this.gridHelper,
-            'Grid in Inches': this.gridInInches
+            'Orthographic camera': this.storage.cameraType,
+            'Gridhelper':          this.storage.gridHelper,
+            'Grid in Inches':      this.storage.gridInInches
         }
 
         const settings = gui.addFolder("Settings");
         settings.add(setData, 'Orthographic camera').onChange((vlu) => {
-            this.cameraType = vlu;
+            this.storage.cameraType = vlu;
         });
         settings.add(setData, 'Gridhelper').onChange((vlu) => {
-            this.gridHelper = vlu;
+            this.storage.gridHelper = vlu;
         });
         settings.add(setData, 'Grid in Inches').onChange((vlu) => {
-            this.gridInInches = vlu;
+            this.storage.gridInInches = vlu;
         });
 
         this.material3D = material3D;
@@ -417,12 +347,9 @@ CWS.Controller.prototype.save = function(forceSave)
         this.saveFlag++;
         // Don't save
         if (this.saveFlag<changes)
-        {
             $("#saveIcon").css('color', 'red');
-        }
         // Save
-        else
-        {
+        else {
             $("#saveIcon").css('color', 'green');
             this.saveFlag=0;
             this.storage.code = this.editor.getCode();
@@ -431,7 +358,7 @@ CWS.Controller.prototype.save = function(forceSave)
 
 CWS.Controller.prototype.runInterpreter = function(forceRun)
     {
-        if (this.autoRun===false && forceRun!==true)
+        if (!this.storage.autoRun && !forceRun)
             return;
         var code = this.editor.getCode();
         this.motion.setData({ header:this.storage.header,
@@ -453,37 +380,23 @@ CWS.Controller.prototype.updateWorkpieceDraw = function()
             this.renderer.lookAt3DPrinter(this.machine.boundingSphere.center,this.machine.boundingSphere.radius);
 
         if (this.machine.motionData.error.length!==0)
-        {
             this.displayMessage(this.machine.motionData.error[0],true);
-        }
         else
             this.displayMessage();
     };
 
 CWS.Controller.prototype.update2D = function()
     {
-        if (this.run2D === true)
-        {
+        if (this.storage.run2D)
             this.machine.create2DWorkpiece();
-            this.machine.mesh2D.visible = true;
-        }
-        else
-        {
-            this.machine.mesh2D.visible = false;
-        }
+        this.machine.mesh2D.visible = this.storage.run2D;
     };
 
 CWS.Controller.prototype.update3D = function()
     {
-        if (this.run3D === true)
-        {
+        if (this.storage.run3D)
             this.machine.create3DWorkpiece();
-            this.machine.mesh3D.visible = true;
-        }
-        else
-        {
-            this.machine.mesh3D.visible = false;
-        }
+        this.machine.mesh3D.visible = this.storage.run3D;
     };
 
 CWS.Controller.prototype.updateWireframe = function()
@@ -501,11 +414,8 @@ CWS.Controller.prototype.displayMessage = function(message,error)
     {
         if (message===undefined)
             $("#messages").text("");
+        else if (error===true)
+            $("#messages").css('color','red').text(message);
         else
-        {
-            if (error===true)
-                $("#messages").css('color','red').text(message);
-            else
-                $("#messages").css('color','black').text(message);
-        }
+            $("#messages").css('color','black').text(message);
     };
