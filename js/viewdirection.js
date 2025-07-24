@@ -1,8 +1,10 @@
-// @author Fredrik Johansson
-// create an axis direction viewhelper.
-// expects #dirhelper or .dirhlper css with position absolute
-// as that will be the container for this separate canvas
-// Based of an example from ViewHelper in Threejs
+/**
+ * @author Fredrik Johansson / github.com/mumme74
+ * create an axis direction viewhelper.
+ * expects #dirhelper or .dirhlper css with position absolute
+ * as that will be the container for this separate canvas
+ * Based of an example from ViewHelper in Threejs
+ */
 
 class ViewHelper {
     constructor(editor, container ) {
@@ -23,6 +25,7 @@ class ViewHelper {
 
 		this.q1 = new THREE.Quaternion();
 		this.q2 = new THREE.Quaternion();
+        this.center = new THREE.Vector3();
 		this.radius = 0;
     }
 
@@ -72,7 +75,6 @@ class ViewHelper {
 		this.interactiveObjects = [];
 		this.raycaster = new THREE.Raycaster();
 		this.mouse = new THREE.Vector2();
-		this.dummy = new THREE.Object3D();
 
 		const geometry = new THREE.BoxGeometry( 0.8, 0.05, 0.05 ).translate( 0.4, 0, 0 );
 
@@ -116,7 +118,7 @@ class ViewHelper {
             xy.style.cssText = "position:absolute;";
             this.container.appendChild(xy);
             xy.addEventListener('click', ()=>{
-                this.#prepareAnimationData(tgt, this.controls.center);
+                this.#prepareAnimationData(tgt, this.center);
             });
         }
     }
@@ -140,11 +142,13 @@ class ViewHelper {
         this.renderer.render( this.scene, this.camera );
     }
 
+     // Should be removed when updating THREE
 	angleTo(qMe, qOther) {
         const clamp = Math.max(- 1, Math.min(qMe.dot(qOther), 1));
 		return 2 * Math.acos( Math.abs(clamp));
 	}
 
+    // Should be removed when updating THREE
     rotateTowards(qDst, qSrc, step) {
 
 		const angle = this.angleTo(qDst, qSrc);
@@ -156,18 +160,15 @@ class ViewHelper {
     }
 
     update ( delta ) {
-        const step = delta * 2*Math.PI;
-        const focusPoint = this.controls.center;
+        const step = delta * 2*Math.PI * 0.0000005;
 
         // animate position by doing a slerp and then scaling the position on the unit sphere
-
-
         this.rotateTowards(this.q1, this.q2, step );
         this.editor.camera.position
             .set( 0, 0, 1 )
             .applyQuaternion( this.q1 )
             .multiplyScalar(this.radius )
-            .add(focusPoint);
+            .add(this.center);
 
         // animate orientation
         this.rotateTowards(this.editor.camera.quaternion,
@@ -196,7 +197,7 @@ class ViewHelper {
         if ( intersects.length > 0 ) {
             const object = intersects[0].object;
 
-            this.#prepareAnimationData(object, this.controls.center);
+            this.#prepareAnimationData(object, this.center);
 
             this.animating = true;
             return true;
@@ -242,18 +243,20 @@ class ViewHelper {
             console.error('ViewHelper: Invalid axis.');
         }
 
-        //
 
         this.radius = this.editor.camera.position.distanceTo(focusPoint);
         this.targetPosition.multiplyScalar( this.radius ).add(focusPoint);
 
-        this.dummy.position.copy(focusPoint);
+		const dummy = new THREE.Object3D();
+        dummy.position.copy(focusPoint);
 
-        this.dummy.lookAt(this.editor.camera.position);
-        this.q1.copy(this.dummy.quaternion);
+        dummy.lookAt(this.editor.camera.position);
+        this.q1.copy(dummy.quaternion);
 
-        this.dummy.lookAt(this.targetPosition);
-        this.q2.copy(this.dummy.quaternion);
+        dummy.lookAt(this.targetPosition);
+        this.q2.copy(dummy.quaternion);
+
+	    this.editor.camera.up = THREE.Object3D.DefaultUp.clone();
 
         requestAnimationFrame(this.update.bind(this));
 
