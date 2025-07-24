@@ -27,6 +27,7 @@ class ViewHelper {
         this.q2 = new THREE.Quaternion();
         this.center = new THREE.Vector3();
         this.radius = 0;
+        this.deltaT = 0;
     }
 
     #setupScene() {
@@ -108,8 +109,8 @@ class ViewHelper {
 
         // make a home buttons
         const homeButtons = {
-            xy: this.interactiveObjects[2], // z-dot in gui
-            xz: this.interactiveObjects[1]  // y-dot in gui
+            xy: {userData:{type:'xyPlane'}},
+            xz: {userData:{type:'xzPlane'}}
         };
         for (const [name, tgt] of Object.entries(homeButtons)) {
             const xy = document.createElement('span');
@@ -160,7 +161,10 @@ class ViewHelper {
     }
 
     update ( delta ) {
-        const step = delta * 2*Math.PI * 0.0000005;
+        if (!this.deltaT)
+            this.deltaT = delta;
+
+        const step = (delta-this.deltaT) * 2*Math.PI * 0.0001;
 
         // animate position by doing a slerp and then scaling the position on the unit sphere
         this.rotateTowards(this.q1, this.q2, step );
@@ -209,6 +213,8 @@ class ViewHelper {
     }
 
     #prepareAnimationData( object, focusPoint ) {
+        this.editor.camera.up = THREE.Object3D.DefaultUp.clone();
+
         switch (object.userData.type) {
         case 'posX':
             this.targetPosition.set(1, 0, 0);
@@ -239,6 +245,16 @@ class ViewHelper {
             this.targetQuaternion.setFromEuler(
                 new THREE.Euler(0, Math.PI, 0));
             break;
+        case 'xyPlane':
+            this.targetPosition.set(0, 0, 1);
+            this.targetQuaternion.setFromEuler(
+                new THREE.Euler(0, 0, 0));
+            break;
+        case 'xzPlane':
+            this.targetPosition.set(0, 1, 0);
+            this.targetQuaternion.setFromEuler(
+                new THREE.Euler(-Math.PI*0.5, 0));
+            break;
         default:
             console.error('ViewHelper: Invalid axis.');
         }
@@ -256,8 +272,8 @@ class ViewHelper {
         dummy.lookAt(this.targetPosition);
         this.q2.copy(dummy.quaternion);
 
-        this.editor.camera.up = THREE.Object3D.DefaultUp.clone();
 
+        this.deltaT = 0;
         requestAnimationFrame(this.update.bind(this));
 
     }

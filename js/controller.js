@@ -120,7 +120,7 @@ CWS.Controller.prototype.loadMachine = function()
                 material3D: this.material3D,
                 workpiece: this.storage.workpiece,
                 renderResolution: 512});
-            this.renderer.lookAtLathe({x:this.storage.workpiece.x,y:this.storage.workpiece.z});
+            this.renderer.lookAtLathe({x:this.storage.workpiece.x,z:this.storage.workpiece.z});
             this.renderer.addMesh("2DWorkpiece",this.machine.mesh2D);
             this.renderer.addMesh("3DWorkpiece",this.machine.mesh3D);
             this.updateWireframe();

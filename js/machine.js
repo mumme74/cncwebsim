@@ -29,6 +29,7 @@ CWS.Machine = function (options)
             fragmentShader: CWS.SHADER["fs-2D"],
             linewidth: 1,
         });
+		this.normalPlane = "XY";
     }
 
 CWS.Machine.prototype.constructor = CWS.Machine;
@@ -103,7 +104,7 @@ CWS.Machine.prototype.create2DWorkpiece = function ()
         this.mesh2D.visible = true;
         // MAYBE MISSING SOMETHING ABOUT POSITION
         if (this.machine.mtype==="Lathe")
-            this.mesh2D.position.x = -this.workpiece.z/2;
+            this.mesh2D.position.z = -this.workpiece.z/2;
         else
         {
             this.mesh2D.position.x = -this.workpiece.x/2;

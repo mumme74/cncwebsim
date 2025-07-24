@@ -61,6 +61,7 @@ class UnitGrid extends THREE.LineSegments
         super(geometry, material);
 
         this.type = 'UnitGrid';
+        this.renderOrder = -1;
     }
 
     /**

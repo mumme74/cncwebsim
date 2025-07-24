@@ -129,11 +129,16 @@ CWS.Renderer.prototype.lookAtLathe = function (dimensions)
     {
         var aspect = this.camera.aspect;
         var fov = 20;
-        var distance = dimensions.y/2/Math.tan( (fov/2)  * (Math.PI/180)  );
-        var cameraPosition = new THREE.Vector3(0,0,distance);
+        const maxDist = Math.max(dimensions.x, dimensions.z);
+        var distance = maxDist/2/Math.tan((fov/2) * (Math.PI/180));
+        // needed to nudge x a little so orbitcontrol didn't lock
+        // therefore 0.000....1 instead of 0
+        var cameraPosition = new THREE.Vector3(0.000001,distance,0);
         this.camera.position.copy( cameraPosition );
-        this.camera.far = 20*Math.max(dimensions.x,dimensions.y);
-        this.camera.near = 0.05*Math.max(dimensions.x,dimensions.y);
+        this.camera.rotation.set(0, Math.PI, 0);
+        this.controls.update();
+        this.camera.far = 20 * maxDist;
+        this.camera.near = 0.05 * maxDist;
         this.camera.updateProjectionMatrix();
     };
 
@@ -301,7 +306,8 @@ CWS.Renderer.prototype.setGridHelper = function (on, inInches)
         }
 
         if (on) {
-            this.gridHelper = new UnitGrid(inInches, 500);
+            const normalPlane = this.controller.machine.normalPlane;
+            this.gridHelper = new UnitGrid(inInches, 500, normalPlane !== 'XY');
             this.scene.add(this.gridHelper);
         }
     }
