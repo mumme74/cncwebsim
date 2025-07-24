@@ -4,10 +4,10 @@
  */
 
 CWS.Controller = function (editor,storage,renderer,motion)
-	{
-		this.storage = storage;
-		this.editor = editor;
-		this.renderer = renderer;
+    {
+        this.storage = storage;
+        this.editor = editor;
+        this.renderer = renderer;
         this.motion = motion;
         this.saveFlag = 0;
 
@@ -74,29 +74,29 @@ CWS.Controller = function (editor,storage,renderer,motion)
         this.motion.setController(this);
 
         // finally when renderer finished it's setup, create axis viewhelper
-		this.dirPointer = new ViewHelper(this.renderer,
-			document.querySelector("#canvasContainer"));
+        this.dirPointer = new ViewHelper(this.renderer,
+            document.querySelector("#canvasContainer"));
     };
 
 CWS.Controller.prototype.constructor = CWS.Controller;
 
 CWS.Controller.prototype.createProject = function(data)
-	{
+    {
         if (data['projectName']=="" || data['projectName']===undefined)
              return;
-		var projectName = this.storage.createNewProject(data['projectName'],data['machineType'],true);
+        var projectName = this.storage.createNewProject(data['projectName'],data['machineType'],true);
         this.openProject(projectName);
-		return projectName;
-	};
+        return projectName;
+    };
 
 CWS.Controller.prototype.listProjects = function()
-	{
-		return this.storage.projectNames;
-	};
+    {
+        return this.storage.projectNames;
+    };
 
 CWS.Controller.prototype.openProject = function(projectName)
-	{
-		this.storage.loadProject(projectName,true);
+    {
+        this.storage.loadProject(projectName,true);
 
         // For old versions
         if (this.storage.machineType==="Lathe" && this.storage.machine.tool===undefined)
@@ -106,8 +106,8 @@ CWS.Controller.prototype.openProject = function(projectName)
                 this.storage.machine = machine;
             }
         this.loadMachine();
-		this.editor.setCode(this.storage.code);
-	};
+        this.editor.setCode(this.storage.code);
+    };
 
 CWS.Controller.prototype.loadMachine = function()
     {
@@ -156,21 +156,21 @@ CWS.Controller.prototype.loadMachine = function()
 
 CWS.Controller.prototype.openMachine = function(machine)
     {
-		this.storage.machine = CWS.Project.createDefaultMachine(machine);
+        this.storage.machine = CWS.Project.createDefaultMachine(machine);
         this.storage.workpiece = CWS.Project.createDefaultWorkpiece(machine);
         this.loadMachine();
         this.runInterpreter();
-	};
+    };
 
 CWS.Controller.prototype.workpieceDimensions = function(dimensions)
-	{
-		this.storage.workpiece.dimension = dimensions;
-	};
+    {
+        this.storage.workpiece.dimension = dimensions;
+    };
 
 CWS.Controller.prototype.getMachineType = function()
-	{
-		return this.storage.machineType;
-	};
+    {
+        return this.storage.machineType;
+    };
 
 CWS.Controller.prototype.getMachine = function()
     {
@@ -186,12 +186,12 @@ CWS.Controller.prototype.setMachineTool = function(tool)
     };
 
 CWS.Controller.prototype.getWorkpiece = function()
-	{
-		return this.storage.workpiece;
-	};
+    {
+        return this.storage.workpiece;
+    };
 
 CWS.Controller.prototype.setWorkpieceDimensions = function(dimensions)
-	{
+    {
         var workpiece = this.storage.workpiece;
         for (var i in dimensions)
             workpiece[i] = dimensions[i];
@@ -214,15 +214,15 @@ CWS.Controller.prototype.setWorkpieceDimensions = function(dimensions)
         }
 
         this.updateWireframe();
-	};
+    };
 
 CWS.Controller.prototype.exportToOBJ = function()
-	{
+    {
         console.log("Exporting");
         var filename = this.storage.header.name;
         // Problem with STL Exporter
         var exporter = new THREE.STLBinaryExporter ();
-		var result = exporter.parse (this.renderer.scene);
+        var result = exporter.parse (this.renderer.scene);
         var element = document.createElement('a');
         var blob = new Blob([result], {type: 'text/plain'});
         element.setAttribute('href', URL.createObjectURL(blob));
@@ -232,7 +232,7 @@ CWS.Controller.prototype.exportToOBJ = function()
         document.body.appendChild(element);
         element.click();
         document.body.removeChild(element);
-	};
+    };
 
 CWS.Controller.prototype.createDatGUI = function ()
     {
@@ -256,7 +256,7 @@ CWS.Controller.prototype.createDatGUI = function ()
             wireframe:false,
             refractionRatio:0.98,
         });
-		material3D.metalness=sett("metalness", 0.0);
+        material3D.metalness=sett("metalness", 0.0);
         material3D.roughness=sett("roughness", 0.0);
         material3D.opacity=1;
         material3D.visible=sett("visible", true);

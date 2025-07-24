@@ -3,14 +3,14 @@
  */
 
 CWS.Mill = function (options)
-	{
-		options = options || {};
-		CWS.Machine.call( this, options );
+    {
+        options = options || {};
+        CWS.Machine.call( this, options );
 
-		this.tool = this.machine.tool;
+        this.tool = this.machine.tool;
 
-		this.canvas = null;
-		this.gl = null;
+        this.canvas = null;
+        this.gl = null;
         this.debug = false;
         this.mtype="Mill";
 
@@ -18,7 +18,7 @@ CWS.Mill = function (options)
         this.initGeometry2D();
         this.initGeometry3D();
         this.create2DWorkpieceLimits();
-	}
+    }
 
 CWS.Mill.prototype = Object.create( CWS.Machine.prototype );
 
@@ -27,49 +27,49 @@ CWS.Mill.prototype.constructor = CWS.Mill;
 CWS.Mill.prototype.initWebGL = function ()
     {
         // For 3D drawing
-		this.canvas =  document.createElement('canvas');
+        this.canvas =  document.createElement('canvas');
         this.canvas.style.zIndex ="1000000000";
         this.canvas.style.position = "absolute";
         this.canvas.style.background = "#f0f0f0";
         if (this.debug)
             document.body.appendChild(this.canvas); // For debugging
-		var attributes = 
-		{
-			alpha: true,
-			depth: true,
-			stencil: false,
-			antialias: false,
-			premultipliedAlpha: false,
-			preserveDrawingBuffer: true,
-		};
-		this.gl=this.canvas.getContext( 'webgl', attributes ) || this.canvas.getContext( 'experimental-webgl', attributes);
-		if ( this.gl === null ) 
-			throw 'Error creating WebGL context.';
-	    this.gl.enable(this.gl.DEPTH_TEST);
+        var attributes =
+        {
+            alpha: true,
+            depth: true,
+            stencil: false,
+            antialias: false,
+            premultipliedAlpha: false,
+            preserveDrawingBuffer: true,
+        };
+        this.gl=this.canvas.getContext( 'webgl', attributes ) || this.canvas.getContext( 'experimental-webgl', attributes);
+        if ( this.gl === null )
+            throw 'Error creating WebGL context.';
+        this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
         this.gl.clearDepth(1.0);                 // Clear everything
         this.gl.enable(this.gl.DEPTH_TEST);      // Enable depth testing
         this.gl.depthFunc(this.gl.LEQUAL);       // Near things obscure far things
-    
-	    this.shaderProgram1 = this.createProgram(this.gl, CWS.SHADER["vs-mill-1-3D"], CWS.SHADER["fs-mill-1-3D"]);
+
+        this.shaderProgram1 = this.createProgram(this.gl, CWS.SHADER["vs-mill-1-3D"], CWS.SHADER["fs-mill-1-3D"]);
         this.gl.useProgram(this.shaderProgram1);
         this.shaderProgram1.dimensions = this.gl.getUniformLocation(this.shaderProgram1, "dimensions");
         this.shaderProgram1.resolution = this.gl.getUniformLocation(this.shaderProgram1, "resolution");
         this.shaderProgram1.currentDimension = this.gl.getUniformLocation(this.shaderProgram1, "currentDimension");
         this.shaderProgram1.toolRadius = this.gl.getUniformLocation(this.shaderProgram1, "toolRadius");
         this.shaderProgram1.vertexPositionAttribute = this.gl.getAttribLocation(this.shaderProgram1, "position");
-    
+
         this.shaderProgram2 = this.createProgram(this.gl, CWS.SHADER["vs-mill-2-3D"], CWS.SHADER["fs-mill-2-3D"]);
-        this.gl.useProgram(this.shaderProgram2);    
+        this.gl.useProgram(this.shaderProgram2);
         this.shaderProgram2.dimensions = this.gl.getUniformLocation(this.shaderProgram2, "dimensions");
         this.shaderProgram2.currentDimension = this.gl.getUniformLocation(this.shaderProgram2, "currentDimension");
         this.shaderProgram2.vertexPositionAttribute = this.gl.getAttribLocation(this.shaderProgram2, "position");
         this.shaderProgram2.texcoordAttribute = this.gl.getAttribLocation(this.shaderProgram2, "texcoord");
-    
+
         this.setRendererResolution();
-    
+
         this.gl.lineWidth(1);
-    
+
         this.gl.clearColor(0.0,0.0,0.0,0.0);
     };
 
@@ -82,12 +82,12 @@ CWS.Mill.prototype.initGeometry3D = function ()
         var minY = Math.round(this.tool.radius*this.renderResolution/this.renderDimensions.y);
         var maxX = Math.round((parseFloat(this.workpiece.x)+this.tool.radius)*this.renderResolution/this.renderDimensions.x);
         var maxY = Math.round((parseFloat(this.workpiece.y)+this.tool.radius)*this.renderResolution/this.renderDimensions.y);
-        
+
         var geometry = new THREE.PlaneBufferGeometry( this.workpiece.x, this.workpiece.y,
                             maxX-minX+1, maxY-minY+1 );
             geometry.dim = {x:maxX-minX+2,y:maxY-minY+2};
             geometry.dynamic = true;
-            if ( geometry.attributes.normal === undefined ) 
+            if ( geometry.attributes.normal === undefined )
             {
                 geometry.addAttribute( 'normal', new THREE.BufferAttribute( new Float32Array( geometry.attributes.position.array.length ), 3 ) );
             }
@@ -96,13 +96,13 @@ CWS.Mill.prototype.initGeometry3D = function ()
             geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0,0,0),99999);
 
         var positions = geometry.attributes.position.array;
-    
+
         var xDist = this.renderDimensions.x/65535.0;
         var yDist = this.renderDimensions.y/65535.0;
         var zDist = this.renderDimensions.z/65535.0;
         var rowSize = (maxX-minX+2);
         yi = 0;
-        for (var xi=0; xi<(maxX-minX+2); xi++) 
+        for (var xi=0; xi<(maxX-minX+2); xi++)
         {
             var arrayPos2 = (yi*rowSize+xi)*3;
             positions[arrayPos2+0] = (xi/(xi+2)*xi)/(this.renderResolution-1)*this.renderDimensions.x;
@@ -110,7 +110,7 @@ CWS.Mill.prototype.initGeometry3D = function ()
             positions[arrayPos2+2] = 0;
         }
         yi = maxY-minY+1;
-        for (var xi=0; xi<(maxX-minX+2); xi++) 
+        for (var xi=0; xi<(maxX-minX+2); xi++)
         {
             var arrayPos2 = (yi*rowSize+xi)*3;
             positions[arrayPos2+0] = (xi/(xi+2)*xi)/(this.renderResolution-1)*this.renderDimensions.x;
@@ -118,7 +118,7 @@ CWS.Mill.prototype.initGeometry3D = function ()
             positions[arrayPos2+2] = 0;
         }
         xi = 0;
-        for (var yi=0; yi<(maxY-minY+2); yi++) 
+        for (var yi=0; yi<(maxY-minY+2); yi++)
         {
             var arrayPos2 = (yi*rowSize+xi)*3;
             positions[arrayPos2+0] = (xi/(xi+2)*xi)/(this.renderResolution-1)*this.renderDimensions.x;
@@ -126,7 +126,7 @@ CWS.Mill.prototype.initGeometry3D = function ()
             positions[arrayPos2+2] = 0;
         }
         xi = maxX-minX+1;
-        for (var yi=0; yi<(maxY-minY+2); yi++) 
+        for (var yi=0; yi<(maxY-minY+2); yi++)
         {
             var arrayPos2 = (yi*rowSize+xi)*3;
             positions[arrayPos2+0] = (xi/(xi+2)*xi)/(this.renderResolution-1)*this.renderDimensions.x;
@@ -141,7 +141,7 @@ CWS.Mill.prototype.initGeometry3D = function ()
         this.mesh3D = mesh;
     };
 
-CWS.Mill.prototype.initGeometry2D = function () 
+CWS.Mill.prototype.initGeometry2D = function ()
     {
         var geometry = new THREE.BufferGeometry();
         geometry.boundingSphere = new THREE.Sphere( new THREE.Vector3(0,0,0),99999);
@@ -158,16 +158,16 @@ CWS.Mill.prototype.initGeometry2D = function ()
         this.mesh2D = mesh;
     };
 
-CWS.Mill.prototype.create2DWorkpieceLimits = function () 
+CWS.Mill.prototype.create2DWorkpieceLimits = function ()
     {
         if (this.meshes.meshWorkpiece === true)
             return;
-        
+
         var x=this.workpiece.x;
         var y=this.workpiece.y;
         var z=this.workpiece.z;
         var geometry = new THREE.Geometry();
-        geometry.vertices.push( 
+        geometry.vertices.push(
             new THREE.Vector3(x*0,y*0,z*0),new THREE.Vector3(x*1,y*0,z*0),
             new THREE.Vector3(x*1,y*0,z*0),new THREE.Vector3(x*1,y*0,z*1),
             new THREE.Vector3(x*1,y*0,z*1),new THREE.Vector3(x*0,y*0,z*1),
@@ -183,7 +183,7 @@ CWS.Mill.prototype.create2DWorkpieceLimits = function ()
         geometry.computeLineDistances();
 
         var material = new THREE.LineDashedMaterial( { color: 0x000000, dashSize: 2, gapSize: 1 } );
-        
+
         var mesh = new THREE.Line( geometry, material );
         mesh.name="2DWorkpieceDash";
         mesh.position.x = -this.workpiece.x/2;
@@ -191,7 +191,7 @@ CWS.Mill.prototype.create2DWorkpieceLimits = function ()
         mesh.position.z = -this.workpiece.z/2;
 
         mesh.visible = true;
-        
+
         this.meshes.meshWorkpiece = true;
         this.meshWorkpiece = mesh;
     };
@@ -224,7 +224,7 @@ CWS.Mill.prototype.createToolTexture = function (dim,ang)
         function distance(cx,cy,x,y)
         {
             return Math.sqrt(Math.pow(cx-x,2)+Math.pow(cy-y,2));
-        }  
+        }
         var cx=dim/2;
         var cy=dim/2;
         var radius=dim/2;
@@ -262,7 +262,7 @@ CWS.Mill.prototype.createToolTexture = function (dim,ang)
         // this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
-        
+
         this.gl.bindTexture(this.gl.TEXTURE_2D, null);
         return texture;
     };
@@ -289,7 +289,7 @@ CWS.Mill.prototype.createBuffer = function(oldBuffer,data,itemSize,attribute)
                 {
                     gl.deleteBuffer(oldBuffer);
                 }catch(e)
-                {    
+                {
                 }
             }
             var buffer = this.gl.createBuffer();
@@ -366,12 +366,12 @@ CWS.Mill.prototype.calculatePositionAndTexture = function(dimensions,toolRadius)
         return [positions,texturePos];
     };
 
-CWS.Mill.prototype._create3DWorkpiece = function () 
-	{	
+CWS.Mill.prototype._create3DWorkpiece = function ()
+    {
         // this.toolTexture = this.createToolTexture(32,this.tool.angle);
         var dimensions = this.workpiece;
-    
-		this.gl.useProgram(this.shaderProgram1);
+
+        this.gl.useProgram(this.shaderProgram1);
         this.gl.bindTexture(this.gl.TEXTURE_2D, null);
         this.linesVertexPositionBuffer = this.createBuffer(  this.linesVertexPositionBuffer,this.motionData.positions,3,
                                                         this.shaderProgram2.vertexPositionAttribute);
@@ -382,17 +382,17 @@ CWS.Mill.prototype._create3DWorkpiece = function ()
         this.draw(this.linesVertexPositionBuffer.numItems,{LINE_STRIP:true,POINTS:true},this.pixels1);
         this.gl.uniform1i(this.shaderProgram1.currentDimension, 1);
         this.draw(this.linesVertexPositionBuffer.numItems,{LINE_STRIP:true,POINTS:true},this.pixels2);
-       
+
         data = this.calculatePositionAndTexture(dimensions,this.tool.radius);
         positions = data[0];
         texturePos = data[1];
-    
+
         this.gl.useProgram(this.shaderProgram2);
         this.linesVertexPositionBuffer = this.createBuffer(  this.linesVertexPositionBuffer,positions,3,
                                                         this.shaderProgram2.vertexPositionAttribute);
         this.texcoordBuffer = this.createBuffer( this.texcoordBuffer,texturePos,2,
                                             this.shaderProgram2.texcoordAttribute);
-        
+
         this.gl.uniform3f(this.shaderProgram2.dimensions, this.renderDimensions.x,this.renderDimensions.y,this.renderDimensions.z);
         this.gl.uniform1i(this.shaderProgram2.currentDimension, 0);
         this.draw(this.linesVertexPositionBuffer.numItems,{TRIANGLES:true},this.pixels1);
@@ -401,7 +401,7 @@ CWS.Mill.prototype._create3DWorkpiece = function ()
 
         var geometry  = this.mesh3D.geometry;
         var positions = geometry.attributes.position.array;
-    
+
         var xDist = this.renderDimensions.x/65535.0;
         var yDist = this.renderDimensions.y/65535.0;
         var zDist = this.renderDimensions.z/65535.0;
@@ -414,9 +414,9 @@ CWS.Mill.prototype._create3DWorkpiece = function ()
         var maxY = Math.round((parseFloat(this.workpiece.y)+this.tool.radius)*this.renderResolution/this.renderDimensions.y);
 
         var rowSize = (maxX-minX+2);
-        for (var yi=minY; yi<maxY; yi++)   
+        for (var yi=minY; yi<maxY; yi++)
         {
-            for (var xi=minX; xi<maxX; xi++) 
+            for (var xi=minX; xi<maxX; xi++)
             {
                 var arrayPos1 = (yi*this.renderResolution+xi)*4;
                 var arrayPos2 = ((yi-minY+1)*rowSize+xi-minX+1)*3;
@@ -437,7 +437,7 @@ CWS.Mill.prototype._create3DWorkpiece = function ()
                 }
             }
         }
-    
+
          var index = geometry.index;
          var attributes = geometry.attributes;
          var groups = geometry.groups;
@@ -445,7 +445,7 @@ CWS.Mill.prototype._create3DWorkpiece = function ()
          var positions = attributes.position.array;
          var array = attributes.normal.array;
 
-         for ( var i = 0, il = array.length; i < il; i ++ ) 
+         for ( var i = 0, il = array.length; i < il; i ++ )
          {
              array[i] = 0;
          }
@@ -461,17 +461,17 @@ CWS.Mill.prototype._create3DWorkpiece = function ()
          ab = new THREE.Vector3();
 
          var indices = index.array;
-         if ( groups.length === 0 ) 
+         if ( groups.length === 0 )
          {
              geometry.addGroup( 0, indices.length );
          }
-         for ( var j = 0, jl = groups.length; j < jl; ++ j ) 
+         for ( var j = 0, jl = groups.length; j < jl; ++ j )
          {
              var group = groups[ j ];
              var start = group.start;
              var count = group.count;
 
-             for ( var i = start, il = start + count; i < il; i += 3 ) 
+             for ( var i = start, il = start + count; i < il; i += 3 )
              {
                  vA = indices[ i + 0 ] * 3;
                  vB = indices[ i + 1 ] * 3;
@@ -500,7 +500,7 @@ CWS.Mill.prototype._create3DWorkpiece = function ()
          }
 
          var x, y, z, n;
-         for ( var i = 0, il = normals.length; i < il; i += 3 ) 
+         for ( var i = 0, il = normals.length; i < il; i += 3 )
          {
              x = normals[ i ];
              y = normals[ i + 1 ];
@@ -513,8 +513,8 @@ CWS.Mill.prototype._create3DWorkpiece = function ()
 
         attributes.position.needsUpdate = true;
         attributes.normal.needsUpdate = true;
-        
+
         this.mesh3D.position.x = -this.workpiece.x/2;
         this.mesh3D.position.y = -this.workpiece.y/2;
         this.mesh3D.position.z = -this.workpiece.z/2;
-	};
+    };

@@ -5,197 +5,197 @@
 
 
 CWS.UI = function (controller)
-	{
-		this.controller = controller;
-		var topMenu = $("#topMenu");
-		$("#topMenu>nav > ul > li").each(function(i){$(this)
-			.mouseenter(function(){topMenu.css('height','90px');})
-			.mouseleave(function(){topMenu.css('height','45px');})
-		});
-		topMenu.click(
-			function  (ev)
-			{
-				var title = ev.target.title
-				switch (title)
-				{
-					case "New Project":
-						var d = new CWS.DialogBox(title);
-						d.newProject(controller);
-						break;
-					case "Open Project":
-						var d = new CWS.DialogBox(title);
-						d.openProject(controller);
-						break;
-					case "Open Machine":
-						var d = new CWS.DialogBox(title);
-						d.openMachine(controller);
-						break;
-					case "Workpiece dimensions":
-						var d = new CWS.DialogBox(title);
-						d.workpieceDimensions(controller);
-						break;
+    {
+        this.controller = controller;
+        var topMenu = $("#topMenu");
+        $("#topMenu>nav > ul > li").each(function(i){$(this)
+            .mouseenter(function(){topMenu.css('height','90px');})
+            .mouseleave(function(){topMenu.css('height','45px');})
+        });
+        topMenu.click(
+            function  (ev)
+            {
+                var title = ev.target.title
+                switch (title)
+                {
+                    case "New Project":
+                        var d = new CWS.DialogBox(title);
+                        d.newProject(controller);
+                        break;
+                    case "Open Project":
+                        var d = new CWS.DialogBox(title);
+                        d.openProject(controller);
+                        break;
+                    case "Open Machine":
+                        var d = new CWS.DialogBox(title);
+                        d.openMachine(controller);
+                        break;
+                    case "Workpiece dimensions":
+                        var d = new CWS.DialogBox(title);
+                        d.workpieceDimensions(controller);
+                        break;
                     case "Export File":
                         controller.exportToOBJ();
                         break;
                     case "Tool":
                         var d = new CWS.DialogBox(title);
-						d.tool(controller);
+                        d.tool(controller);
                         break;
-					default:
-						break;
-				}
-			});
+                    default:
+                        break;
+                }
+            });
 
-		this.elementEditor = $(document.getElementById("editor"));
-		this.elementTopMenu = $(document.getElementById("topMenu"));
-		this.elementCanvasContainer = $(document.getElementById("canvasContainer"));
-		this.elementBottomMenu = $(document.getElementById("bottomMenu"));
-		this.elementBody = $(document.body);
-		this.resize();
-		$("#saveIcon").css('color', 'green').click(function (ev)
-		{
-			controller.save(true);
-		});
-		this.settingsButton("#autoRunIcon", "autoRun", function ()
-		{
-			controller.storage.autoRun=!controller.storage.autoRun;
-			if (controller.storage.autoRun)
-				controller.runInterpreter(true);
-		});
-		$("#runIcon").click(function (ev)
-		{
-			controller.runInterpreter(true);
-		});
-		this.settingsButton("#run2DIcon", "run2D", function (ev)
-		{
-			controller.storage.run2D=!controller.storage.run2D;
-			controller.update2D();
-		});
-		this.settingsButton("#run3DIcon", "run3D", function (ev)
-		{
-			controller.storage.run3D=!controller.storage.run3D;
-			controller.update3D();
-		});
-		this.settingsButton("#wireframeIcon", "runWireframe", function (ev)
-		{
-			controller.storage.runWireframe=!controller.storage.runWireframe;
-		});
-		$("#runAnimationIcon").click(function (ev)
-		{
-			controller.runAnimation();
-		});
-	}
+        this.elementEditor = $(document.getElementById("editor"));
+        this.elementTopMenu = $(document.getElementById("topMenu"));
+        this.elementCanvasContainer = $(document.getElementById("canvasContainer"));
+        this.elementBottomMenu = $(document.getElementById("bottomMenu"));
+        this.elementBody = $(document.body);
+        this.resize();
+        $("#saveIcon").css('color', 'green').click(function (ev)
+        {
+            controller.save(true);
+        });
+        this.settingsButton("#autoRunIcon", "autoRun", function ()
+        {
+            controller.storage.autoRun=!controller.storage.autoRun;
+            if (controller.storage.autoRun)
+                controller.runInterpreter(true);
+        });
+        $("#runIcon").click(function (ev)
+        {
+            controller.runInterpreter(true);
+        });
+        this.settingsButton("#run2DIcon", "run2D", function (ev)
+        {
+            controller.storage.run2D=!controller.storage.run2D;
+            controller.update2D();
+        });
+        this.settingsButton("#run3DIcon", "run3D", function (ev)
+        {
+            controller.storage.run3D=!controller.storage.run3D;
+            controller.update3D();
+        });
+        this.settingsButton("#wireframeIcon", "runWireframe", function (ev)
+        {
+            controller.storage.runWireframe=!controller.storage.runWireframe;
+        });
+        $("#runAnimationIcon").click(function (ev)
+        {
+            controller.runAnimation();
+        });
+    }
 
 CWS.UI.prototype.constructor = CWS.UI;
 
 CWS.UI.prototype.resize = function()
-	{
-		var width = this.elementBody.innerWidth();
-		var height = this.elementBody.innerHeight();
+    {
+        var width = this.elementBody.innerWidth();
+        var height = this.elementBody.innerHeight();
 
-		var editorWidth;
-		if (this.elementEditor.css('display')==='none')
-			editorWidth = 0;
-		else
-			editorWidth = this.elementEditor.innerWidth();
+        var editorWidth;
+        if (this.elementEditor.css('display')==='none')
+            editorWidth = 0;
+        else
+            editorWidth = this.elementEditor.innerWidth();
 
-		this.elementTopMenu.innerWidth(width-editorWidth);
-		this.elementCanvasContainer.innerWidth(width-editorWidth);
-		this.controller.renderer.setSize(width-editorWidth,height);
-		this.elementBottomMenu.innerWidth(width-editorWidth);
-	};
+        this.elementTopMenu.innerWidth(width-editorWidth);
+        this.elementCanvasContainer.innerWidth(width-editorWidth);
+        this.controller.renderer.setSize(width-editorWidth,height);
+        this.elementBottomMenu.innerWidth(width-editorWidth);
+    };
 
 CWS.UI.prototype.createStats = function (v)
-	{
-		if (v===false)
-			return {update:function(){}};
-		var maincanvasdiv = document.getElementById("canvasContainer");
-		var width = maincanvasdiv.offsetWidth;
-		var height = maincanvasdiv.offsetHeight;
+    {
+        if (v===false)
+            return {update:function(){}};
+        var maincanvasdiv = document.getElementById("canvasContainer");
+        var width = maincanvasdiv.offsetWidth;
+        var height = maincanvasdiv.offsetHeight;
 
-		stats = new Stats();
-		stats.domElement.style.position = 'absolute';
-		stats.domElement.style.bottom = '0px';
-		stats.domElement.style.right = '0px';
-		maincanvasdiv.appendChild( stats.domElement );
-		return stats;
-	};
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.bottom = '0px';
+        stats.domElement.style.right = '0px';
+        maincanvasdiv.appendChild( stats.domElement );
+        return stats;
+    };
 
 CWS.UI.prototype.settingsButton = function (node, prop, cb)
     {
-		if (!cb) cb = function() {};
-		var _t = this;
-		node = $(node);
-		node.css('color', this.controller.storage[prop] ? "green" : "red");
-		node.click(function(event)
-		{
-			cb.call(node, event);
-			node.css('color', _t.controller.storage[prop] ? "green" : "red");
-		});
-	};
+        if (!cb) cb = function() {};
+        var _t = this;
+        node = $(node);
+        node.css('color', this.controller.storage[prop] ? "green" : "red");
+        node.click(function(event)
+        {
+            cb.call(node, event);
+            node.css('color', _t.controller.storage[prop] ? "green" : "red");
+        });
+    };
 
 CWS.DialogBox = function (title)
-	{
-		$("#dialogBox").remove();
+    {
+        $("#dialogBox").remove();
 
-		this.dialog = $( '<div id="dialogBox" title="'+title+'" ></div>');
-	}
+        this.dialog = $( '<div id="dialogBox" title="'+title+'" ></div>');
+    }
 
 CWS.DialogBox.prototype.constructor = CWS.DialogBox;
 
 CWS.DialogBox.prototype.newProject = function (controller)
-	{
-		var html = '<form id="menuNewProject">'+
-			'<ul>'+
-			'  <li>'+
-			'    <label for= "projectName" >Project Name</label>'+
-			'    <input type= "text" name= "projectName" />'+
-			'  </li>'+
-			'  <li>'+
-			'    <label for= "machineType" >Machine</label>'+
-			'    <input type="radio" name="machineType" value="Lathe" checked> Lathe'+
-			'    <input type="radio" name="machineType" value="Mill"> Mill'+
-			'    <input type="radio" name="machineType" value="3D Printer"> 3D Printer'+
-			'  </li>'+
-			'</ul>'+
-			'</form>';
-		this.dialog.append($(html));
-		this.dialog.dialog(
-	      {
-	      width: 400,
-	      buttons:
-	        {
-	            "Create": function()
-	            {
-	            	var values = {};
-	            	var result = $(this.firstChild).serializeArray();
-	            	for (var i = 0; i < result.length; i++)
-	            	{
-	            		values[result[i].name]=result[i].value;
-	            	}
-	              	controller.createProject(values);
-	              	$(this).dialog("close");
-	            },
-	          	"Cancel": function()
-	            {
-          			$(this).dialog("close");
-	            }
-	        }
-	      });
-	};
+    {
+        var html = '<form id="menuNewProject">'+
+            '<ul>'+
+            '  <li>'+
+            '    <label for= "projectName" >Project Name</label>'+
+            '    <input type= "text" name= "projectName" />'+
+            '  </li>'+
+            '  <li>'+
+            '    <label for= "machineType" >Machine</label>'+
+            '    <input type="radio" name="machineType" value="Lathe" checked> Lathe'+
+            '    <input type="radio" name="machineType" value="Mill"> Mill'+
+            '    <input type="radio" name="machineType" value="3D Printer"> 3D Printer'+
+            '  </li>'+
+            '</ul>'+
+            '</form>';
+        this.dialog.append($(html));
+        this.dialog.dialog(
+          {
+          width: 400,
+          buttons:
+            {
+                "Create": function()
+                {
+                    var values = {};
+                    var result = $(this.firstChild).serializeArray();
+                    for (var i = 0; i < result.length; i++)
+                    {
+                        values[result[i].name]=result[i].value;
+                    }
+                      controller.createProject(values);
+                      $(this).dialog("close");
+                },
+                  "Cancel": function()
+                {
+                      $(this).dialog("close");
+                }
+            }
+          });
+    };
 
 CWS.DialogBox.prototype.openProject = function (controller)
-	{
-		html = '<ul class="tableList">';
-		var fileList = Object.keys(controller.listProjects());
-		for (var i = 0; i < fileList.length; i++)
-		{
-			html += '<li><span class="icon icon-file-text2"></span>'+fileList[i]+'</li>';
-		}
-		html += "</ul>";
+    {
+        html = '<ul class="tableList">';
+        var fileList = Object.keys(controller.listProjects());
+        for (var i = 0; i < fileList.length; i++)
+        {
+            html += '<li><span class="icon icon-file-text2"></span>'+fileList[i]+'</li>';
+        }
+        html += "</ul>";
         var dialog = this.dialog;
-		html = $(html).click(function (event)
-			{
+        html = $(html).click(function (event)
+            {
                 if (event.target.parentElement.tagName.toLocaleLowerCase()=="div")
                     return;
                 var projectName="";
@@ -209,31 +209,31 @@ CWS.DialogBox.prototype.openProject = function (controller)
                 }
                 controller.openProject(projectName);
                 dialog.dialog("close");
-			});
-		this.dialog.append(html);
-		this.dialog.dialog(
-	      {
-	      width: 400,
-	      buttons:
-	        {
-	          	"Cancel": function()
-	            {
-          			$(this).dialog("close");
-	            }
-	        }
-	      });
-	};
+            });
+        this.dialog.append(html);
+        this.dialog.dialog(
+          {
+          width: 400,
+          buttons:
+            {
+                  "Cancel": function()
+                {
+                      $(this).dialog("close");
+                }
+            }
+          });
+    };
 
 CWS.DialogBox.prototype.openMachine = function (controller)
-	{
-		html = '<ul class="tableList">'+
-		'  <li><span class="icon icon-lathe"></span>Lathe</li>'+
-		'  <li><span class="icon icon-mill"></span>Mill</li>'+
-		'  <li><span class="icon icon-printer"></span>3D Printer</li>'+
-		'</ul>';
+    {
+        html = '<ul class="tableList">'+
+        '  <li><span class="icon icon-lathe"></span>Lathe</li>'+
+        '  <li><span class="icon icon-mill"></span>Mill</li>'+
+        '  <li><span class="icon icon-printer"></span>3D Printer</li>'+
+        '</ul>';
         var dialog = this.dialog;
-		html = $(html).click(function (event)
-			{
+        html = $(html).click(function (event)
+            {
                 if (event.target.parentElement.tagName.toLocaleLowerCase()=="div")
                     return;
                 var machineName="";
@@ -247,23 +247,23 @@ CWS.DialogBox.prototype.openMachine = function (controller)
                 }
                 controller.openMachine(machineName);
                 dialog.dialog("close");
-			});
-		this.dialog.append(html);
-		this.dialog.dialog(
-	      {
-	      width: 400,
-	      buttons:
-	        {
-	          	"Cancel": function()
-	            {
-          			$(this).dialog("close");
-	            }
-	        }
-	      });
-	};
+            });
+        this.dialog.append(html);
+        this.dialog.dialog(
+          {
+          width: 400,
+          buttons:
+            {
+                  "Cancel": function()
+                {
+                      $(this).dialog("close");
+                }
+            }
+          });
+    };
 
 CWS.DialogBox.prototype.workpieceDimensions = function (controller)
-	{
+    {
         var machineType = controller.getMachineType();
         var workpiece = controller.getWorkpiece();
         var html = "";
@@ -313,126 +313,126 @@ CWS.DialogBox.prototype.workpieceDimensions = function (controller)
             '  </li>'+
             '</ul></form>';
         }
-		this.dialog.append($(html));
-		this.dialog.dialog(
-	      {
-	      width: 400,
-	      buttons:
-	        {
-	            "Save": function()
-	            {
-	            	var values = {};
-	            	var result = $(this.firstChild).serializeArray();
-	            	for (var i = 0; i < result.length; i++)
-	            	{
-	            		values[result[i].name]=parseFloat(result[i].value);
-	            	}
-	              	controller.setWorkpieceDimensions(values);
-	              	$(this).dialog("close");
-	            },
-	          	"Cancel": function()
-	            {
-          			$(this).dialog("close");
-	            }
-	        }
-	      });
-	};
+        this.dialog.append($(html));
+        this.dialog.dialog(
+          {
+          width: 400,
+          buttons:
+            {
+                "Save": function()
+                {
+                    var values = {};
+                    var result = $(this.firstChild).serializeArray();
+                    for (var i = 0; i < result.length; i++)
+                    {
+                        values[result[i].name]=parseFloat(result[i].value);
+                    }
+                      controller.setWorkpieceDimensions(values);
+                      $(this).dialog("close");
+                },
+                  "Cancel": function()
+                {
+                      $(this).dialog("close");
+                }
+            }
+          });
+    };
 
 CWS.DialogBox.prototype.tool = function (controller)
-	{
-		var machineType = controller.getMachineType();
-		if (machineType==="Lathe")
-		{
-			var machine = controller.getMachine();
-			var html = 	'<form id="menuTool">'+
-						'<ul>'+
-						'  <li>'+
-						'    <label for= "toolradius" >Tool radius</label>'+
-						'    <input type= "text" name= "toolradius" value="'+machine.tool.radius+'"/>'+
-						'  </li>'+
-						'</ul>'+
-						'</form>';
-			this.dialog.append($(html));
-			this.dialog.dialog(
-		      {
-		      width: 400,
-		      buttons:
-		        {
-		            "Save": function()
-		            {
-		            	var values = {};
-		            	var result = $(this.firstChild).serializeArray();
-		            	for (var i = 0; i < result.length; i++)
-		            	{
-		            		values[result[i].name]=parseFloat(result[i].value);
-		            	}
-		              	controller.setMachineTool(values);
-		              	$(this).dialog("close");
-		            },
-		          	"Cancel": function()
-		            {
-	          			$(this).dialog("close");
-		            }
-		        }
-		      });
-		}
-		else if (machineType==="Mill")
-		{
-			var machine = controller.getMachine();
-			var html = 	'<form id="menuTool">'+
-						'<ul>'+
-						'  <li>'+
-						'    <label for= "toolradius" >Tool radius</label>'+
-						'    <input type= "text" name= "toolradius" value="'+machine.tool.radius+'"/>'+
-						'  </li>'+
-						'  <li>'+
-						'    <label for= "toolangle" >Tool angle</label>'+
-						'    <input type= "text" name= "toolangle" value="'+machine.tool.angle+'"/>'+
-						'  </li>'+
-						'</ul>'+
-						'</form>';
-			this.dialog.append($(html));
-			this.dialog.dialog(
-		      {
-		      width: 400,
-		      buttons:
-		        {
-		            "Save": function()
-		            {
-		            	var values = {};
-		            	var result = $(this.firstChild).serializeArray();
-		            	for (var i = 0; i < result.length; i++)
-		            	{
-		            		values[result[i].name]=parseFloat(result[i].value);
-		            	}
-		              	controller.setMachineTool(values);
-		              	$(this).dialog("close");
-		            },
-		          	"Cancel": function()
-		            {
-	          			$(this).dialog("close");
-		            }
-		        }
-		      });
-		}
-		else
-		{
-			var html = 	'<ul><li>'+machineType+' does not support tool settings</li></ul>';
-			this.dialog.append($(html));
-			this.dialog.dialog(
-		      {
-		      width: 400,
-		      buttons:
-		        {
-		            "Ok": function()
-		            {
-		              	$(this).dialog("close");
-		            },
-		          	"Cancel": function()
-		            {
-	          			$(this).dialog("close");
-		            }
-		        }
-		      });
-		}
-	};
+    {
+        var machineType = controller.getMachineType();
+        if (machineType==="Lathe")
+        {
+            var machine = controller.getMachine();
+            var html =     '<form id="menuTool">'+
+                        '<ul>'+
+                        '  <li>'+
+                        '    <label for= "toolradius" >Tool radius</label>'+
+                        '    <input type= "text" name= "toolradius" value="'+machine.tool.radius+'"/>'+
+                        '  </li>'+
+                        '</ul>'+
+                        '</form>';
+            this.dialog.append($(html));
+            this.dialog.dialog(
+              {
+              width: 400,
+              buttons:
+                {
+                    "Save": function()
+                    {
+                        var values = {};
+                        var result = $(this.firstChild).serializeArray();
+                        for (var i = 0; i < result.length; i++)
+                        {
+                            values[result[i].name]=parseFloat(result[i].value);
+                        }
+                          controller.setMachineTool(values);
+                          $(this).dialog("close");
+                    },
+                      "Cancel": function()
+                    {
+                          $(this).dialog("close");
+                    }
+                }
+              });
+        }
+        else if (machineType==="Mill")
+        {
+            var machine = controller.getMachine();
+            var html =     '<form id="menuTool">'+
+                        '<ul>'+
+                        '  <li>'+
+                        '    <label for= "toolradius" >Tool radius</label>'+
+                        '    <input type= "text" name= "toolradius" value="'+machine.tool.radius+'"/>'+
+                        '  </li>'+
+                        '  <li>'+
+                        '    <label for= "toolangle" >Tool angle</label>'+
+                        '    <input type= "text" name= "toolangle" value="'+machine.tool.angle+'"/>'+
+                        '  </li>'+
+                        '</ul>'+
+                        '</form>';
+            this.dialog.append($(html));
+            this.dialog.dialog(
+              {
+              width: 400,
+              buttons:
+                {
+                    "Save": function()
+                    {
+                        var values = {};
+                        var result = $(this.firstChild).serializeArray();
+                        for (var i = 0; i < result.length; i++)
+                        {
+                            values[result[i].name]=parseFloat(result[i].value);
+                        }
+                          controller.setMachineTool(values);
+                          $(this).dialog("close");
+                    },
+                      "Cancel": function()
+                    {
+                          $(this).dialog("close");
+                    }
+                }
+              });
+        }
+        else
+        {
+            var html =     '<ul><li>'+machineType+' does not support tool settings</li></ul>';
+            this.dialog.append($(html));
+            this.dialog.dialog(
+              {
+              width: 400,
+              buttons:
+                {
+                    "Ok": function()
+                    {
+                          $(this).dialog("close");
+                    },
+                      "Cancel": function()
+                    {
+                          $(this).dialog("close");
+                    }
+                }
+              });
+        }
+    };

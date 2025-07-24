@@ -8,7 +8,7 @@
 
 class ViewHelper {
     constructor(editor, container ) {
-		this.dim = 128;
+        this.dim = 128;
         Object.freeze(this.dim);
 
         this.editor = editor;
@@ -20,27 +20,27 @@ class ViewHelper {
         this.#setupScene();
         this.#makeParts();
 
-		this.targetPosition = new THREE.Vector3();
-	    this.targetQuaternion = new THREE.Quaternion();
+        this.targetPosition = new THREE.Vector3();
+        this.targetQuaternion = new THREE.Quaternion();
 
-		this.q1 = new THREE.Quaternion();
-		this.q2 = new THREE.Quaternion();
+        this.q1 = new THREE.Quaternion();
+        this.q2 = new THREE.Quaternion();
         this.center = new THREE.Vector3();
-		this.radius = 0;
+        this.radius = 0;
     }
 
     #setupScene() {
         this.renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
-		this.renderer.setPixelRatio( window.devicePixelRatio );
-		this.renderer.setSize(this.dim, this.dim);
+        this.renderer.setPixelRatio( window.devicePixelRatio );
+        this.renderer.setSize(this.dim, this.dim);
 
-		this.renderer.domElement.id= "viewhelper";
-		this.container.appendChild(this.renderer.domElement);
+        this.renderer.domElement.id= "viewhelper";
+        this.container.appendChild(this.renderer.domElement);
 
-		this.scene = new THREE.Scene();
+        this.scene = new THREE.Scene();
 
-		this.camera = new THREE.OrthographicCamera( - 2, 2, 2, - 2, 0, 4 );
-		this.camera.position.set( 0, 0, 2 );
+        this.camera = new THREE.OrthographicCamera( - 2, 2, 2, - 2, 0, 4 );
+        this.camera.position.set( 0, 0, 2 );
 
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         this.controls.update();
@@ -53,16 +53,16 @@ class ViewHelper {
         this.light.position.set(10, 10, 10);
         this.scene.add(this.light);
 
-		this.animating = false;
+        this.animating = false;
 
-		this.container.addEventListener( 'pointerup', ( event ) => {
-			event.stopPropagation();
-			this.#handleClick( event );
-		} );
+        this.container.addEventListener( 'pointerup', ( event ) => {
+            event.stopPropagation();
+            this.#handleClick( event );
+        } );
 
-		this.container.addEventListener( 'pointerdown', ( event ) => {
-			event.stopPropagation();
-		} );
+        this.container.addEventListener( 'pointerdown', ( event ) => {
+            event.stopPropagation();
+        } );
     }
 
     #makeParts() {
@@ -72,19 +72,19 @@ class ViewHelper {
             z: new THREE.Color( '#2c8fff' )
         }
 
-		this.interactiveObjects = [];
-		this.raycaster = new THREE.Raycaster();
-		this.mouse = new THREE.Vector2();
+        this.interactiveObjects = [];
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
 
-		const geometry = new THREE.BoxGeometry( 0.8, 0.05, 0.05 ).translate( 0.4, 0, 0 );
+        const geometry = new THREE.BoxGeometry( 0.8, 0.05, 0.05 ).translate( 0.4, 0, 0 );
 
         this.axis = {
             x: new THREE.Mesh( geometry, this.#getAxisMaterial(this.colors.x)),
             y: new THREE.Mesh( geometry, this.#getAxisMaterial(this.colors.y)),
             z: new THREE.Mesh( geometry, this.#getAxisMaterial(this.colors.z))
         }
-		this.axis.y.rotation.z = Math.PI / 2;
-		this.axis.z.rotation.y = - Math.PI / 2;
+        this.axis.y.rotation.z = Math.PI / 2;
+        this.axis.z.rotation.y = - Math.PI / 2;
 
         for (const ax of Object.values(this.axis))
             this.scene.add(ax);
@@ -104,7 +104,7 @@ class ViewHelper {
             this.interactiveObjects.push(help);
         }
 
-		this.point = new THREE.Vector3();
+        this.point = new THREE.Vector3();
 
         // make a home buttons
         const homeButtons = {
@@ -123,7 +123,7 @@ class ViewHelper {
         }
     }
 
-	render () {
+    render () {
         this.scene.quaternion.copy( this.editor.camera.quaternion).inverse();
 
         this.scene.updateMatrixWorld();
@@ -143,20 +143,20 @@ class ViewHelper {
     }
 
      // Should be removed when updating THREE
-	angleTo(qMe, qOther) {
+    angleTo(qMe, qOther) {
         const clamp = Math.max(- 1, Math.min(qMe.dot(qOther), 1));
-		return 2 * Math.acos( Math.abs(clamp));
-	}
+        return 2 * Math.acos( Math.abs(clamp));
+    }
 
     // Should be removed when updating THREE
     rotateTowards(qDst, qSrc, step) {
 
-		const angle = this.angleTo(qDst, qSrc);
-		if (angle === 0)
+        const angle = this.angleTo(qDst, qSrc);
+        if (angle === 0)
             return this;
 
-		const t = Math.min(1, step / angle);
-		qDst.slerp(qSrc, t);
+        const t = Math.min(1, step / angle);
+        qDst.slerp(qSrc, t);
     }
 
     update ( delta ) {
@@ -247,7 +247,7 @@ class ViewHelper {
         this.radius = this.editor.camera.position.distanceTo(focusPoint);
         this.targetPosition.multiplyScalar( this.radius ).add(focusPoint);
 
-		const dummy = new THREE.Object3D();
+        const dummy = new THREE.Object3D();
         dummy.position.copy(focusPoint);
 
         dummy.lookAt(this.editor.camera.position);
@@ -256,7 +256,7 @@ class ViewHelper {
         dummy.lookAt(this.targetPosition);
         this.q2.copy(dummy.quaternion);
 
-	    this.editor.camera.up = THREE.Object3D.DefaultUp.clone();
+        this.editor.camera.up = THREE.Object3D.DefaultUp.clone();
 
         requestAnimationFrame(this.update.bind(this));
 
