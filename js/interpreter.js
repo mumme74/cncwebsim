@@ -677,6 +677,7 @@ CWS.Interpreter.prototype.g28 = function (prgCmd)
 // The parameter values are absolute machine coordinates in the native machine units
 CWS.Interpreter.prototype.g30 = function (prgCmd)
 	{
+	const outCmd = this._makeCmdFromPrgCmd(prgCmd, 30);
 	this.pushNoMoveCmd(prgCmd);
 	};
 

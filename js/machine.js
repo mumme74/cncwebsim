@@ -11,10 +11,14 @@ CWS.Machine = function (options)
         this.workpiece = options.workpiece;
         this.machine = options.machine;
         this.material3D = options.material3D;
-        this.lineColors = options.lineColors || {   g0: new THREE.Color(1,0,0),
-                                                    g1: new THREE.Color(0,0,1),
-                                                    g2: new THREE.Color(1,0,1),
-                                                    g3: new THREE.Color(0,1,1),};
+        this.lineColors = options.lineColors || {
+            g0: new THREE.Color(1,0,0),
+            g1: new THREE.Color(0,0,1),
+            g2: new THREE.Color(1,0,1),
+            g3: new THREE.Color(0,1,1),
+            g28: new THREE.Color(0.5,0,0),
+            g30: new THREE.Color(0.5,0,0)
+        };
         this.meshes = {mesh2D:false,mesh3D:false,meshWorkpiece:false};
         // For 2D drawing
         this.material2D = new THREE.ShaderMaterial(
@@ -23,7 +27,9 @@ CWS.Machine = function (options)
                 g0: { type: "c", value: this.lineColors.g0 },
                 g1: { type: "c", value: this.lineColors.g1 },
                 g2: { type: "c", value: this.lineColors.g2 },
-                g3: { type: "c", value: this.lineColors.g3 }
+                g3: { type: "c", value: this.lineColors.g3 },
+                g28:{ type: "c", value: this.lineColors.g28 },
+                g30:{ type: "c", value: this.lineColors.g30 }
             },
             vertexShader: CWS.SHADER["vs-2D"],
             fragmentShader: CWS.SHADER["fs-2D"],
@@ -169,7 +175,7 @@ CWS.Machine.prototype.create2DWorkpiece = function ()
 					this.next = this._next;
         			this.next(renderer);
 				} else
-					this.stopAnimation();
+					this.stopAnimation(renderer);
         	},
 			_next: function (renderer)
 			{

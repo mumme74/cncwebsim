@@ -176,7 +176,7 @@ CWS.Printer.prototype._create3DWorkpiece = function ()
 					this.next = this._next;
 					this.next(renderer);
 				} else
-					this.stopAnimation()
+					this.stopAnimation(renderer)
         	},
         	_next: function (renderer)
 			{

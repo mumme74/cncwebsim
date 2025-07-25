@@ -525,8 +525,25 @@ CWS.Controller.prototype.updateWireframe = function()
 
 CWS.Controller.prototype.runAnimation = function(animate)
     {
-        this.renderer.animate("2DWorkpiece");
-        this.renderer.animate("3DWorkpiece");
+        let _3dOn = this.storage.run3D,
+            _2dOn = this.storage.run2D;
+        if (this.storage.run2D) {
+            this.storage.run3D = false;
+            this.update3D();
+            this.renderer.animate("2DWorkpiece", ()=>{
+                this.storage.run3D = _3dOn;
+                this.update3D();
+            });
+        }
+        else if (this.storage.run3D) {
+            this.storage.run2D = false;
+            this.update2D()
+            this.renderer.animate("3DWorkpiece", ()=>{
+                this.storage.run2D = _2dOn;
+                this.update2D();
+            });
+
+        }
     };
 
 CWS.Controller.prototype.displayMessage = function(message,error)

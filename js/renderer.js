@@ -265,7 +265,7 @@ CWS.Renderer.prototype.render = function ()
             if (workpiece && workpiece.animation &&
                 workpiece.animation.next
             )
-                workpiece.animation.next();
+                workpiece.animation.next(this);
         }
 
         doAnim(this['2DWorkpiece']);
@@ -304,31 +304,36 @@ CWS.Renderer.prototype.animate = function (meshName)
 CWS.Renderer.prototype.animateFinished = function(anim)
 	{
 		var idx = this._runningAnim.findIndex(o=>o.anim === anim);
-		if (idx !== -1)
-			this._runningAnim.splice(idx,1);
+		if (idx !== -1) {
+            const anim = this._runningAnim.splice(idx,1);
+            if (anim[0].cb) anim[0].cb();
+        }
 		this.render(); // trailing render at the end
 	};
 
 CWS.Renderer.prototype.animate = function (meshName, cb)
 	{
-		if (this[meshName] && this[meshName].animation)
-		{
-			this._runningAnim.push({
-				cb:cb || function(){},
-				anim: this[meshName].animation});
-			this[meshName].animation.toggleAnimation(this);
-		}
+		if (!this[meshName] || !this[meshName].animation)
+            return cb();
 
-		// contiue each frame until animations are done
+        this._runningAnim.push({
+            cb:cb || function(){},
+            anim: this[meshName].animation});
+        this[meshName].animation.toggleAnimation(this);
+
+
+        const num = this[meshName].geometry.getAttribute('position').count,
+              speed = Math.ceil(30/num);
+		// contiNue each frame until animations are done
 		let cnt = 0;
 		const eachFrm = (time)=>{
 			if (this._animationFrame === time) return; // already done this frame
 			for (const o of this._runningAnim)
-			 { o.anim.next(this); o.cb() }
+			    o.anim.next(this)
 			this._animationFrame = time;
 			if (this._runningAnim.length) {
 				requestAnimationFrame(eachFrm);
-				if (cnt++ % 10 == 0)
+				if (cnt++ % speed == 0)
 					this.renderer.render(this.scene, this.camera);
 			}
 		}
