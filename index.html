@@ -1,6 +1,6 @@
 <html>
 <head>
-	<meta charset="utf-8">
+    <meta charset="utf-8">
    <meta name="viewport" content="minimal-ui, width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta name="google" content="nositelinkssearchbox" />
     <meta name="description" content="CNC Web Simulator, an open source CNC simulator for web browser. It can simulate lathe, mill and 3D printers." />
@@ -17,114 +17,114 @@
     <script src="js/libs/jquery-ui.min.js"></script>
     <script src="js/libs/three.js"></script>
     <script src="js/libs/dat.gui.js"></script>
-	<script src="js/libs/stats.min.js"></script>
-	<script src="js/libs/OrbitControls.js"></script>
-	<script src="js/libs/TrackballControls.js"></script>
+    <script src="js/libs/stats.min.js"></script>
+    <script src="js/libs/OrbitControls.js"></script>
+    <script src="js/libs/TrackballControls.js"></script>
     <script src="js/libs/OBJExporter.js"></script>
     <script src="js/libs/STLBinaryExporter.js"></script>
 
     <script src="js/cws.js"></script>
-	<script src="js/storage.js"></script>
-	<script src="js/project.js"></script>
-	<script src="js/interpreter.js"></script>
-	<script src="js/editor.js"></script>
-	<script src="js/unitgrid.js"></script>
-	<script src="js/renderer.js"></script>
-	<script src="js/shaders.js"></script>
-	<script src="js/machine.js"></script>
-	<script src="js/lathe.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/project.js"></script>
+    <script src="js/interpreter.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/unitgrid.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/shaders.js"></script>
+    <script src="js/machine.js"></script>
+    <script src="js/lathe.js"></script>
     <script src="js/mill.js"></script>
     <script src="js/printer.js"></script>
     <script src="js/motion.js"></script>
-	<script src="js/panZoomSelect.js"></script>
-	<script src="js/controller.js"></script>
-	<script src="js/viewdirection.js"></script>
-	<script src="js/ui.js"></script>
+    <script src="js/panZoomSelect.js"></script>
+    <script src="js/controller.js"></script>
+    <script src="js/viewdirection.js"></script>
+    <script src="js/ui.js"></script>
 
 
-	<script type="text/javascript">
-	var controller,ui;
-	// TODO
-	// Lathe tool
-	// Check input forms
-	window.addEventListener("load", (function ()
-	{
+    <script type="text/javascript">
+    var controller,ui;
+    // TODO
+    // Lathe tool
+    // Check input forms
+    window.addEventListener("load", (function ()
+    {
         controller = new CWS.Controller(
-        	new CWS.CodeEditor(),
-        	new CWS.Storage({useCompression:true,useLocalStorage:true}),
-        	new CWS.Renderer("renderer1"),
-        	new CWS.Motion()
-        	);
+            new CWS.CodeEditor(),
+            new CWS.Storage({useCompression:true,useLocalStorage:true}),
+            new CWS.Renderer("renderer1"),
+            new CWS.Motion()
+            );
 
-		ui = new CWS.UI(controller);
+        ui = new CWS.UI(controller);
 
-	}),true);
+    }),true);
 </script>
 </head>
 <body>
-	<div id="editor">
-	</div>
-	<div id="topMenu">
-		<nav>
-			<ul>
-				<li><div><span title="File" class="icon icon-folder-open"></span>File</div>
-					<ul>
-						<li><div title="New Project">New</div></li>
-						<li><div title="Open Project">Open</div></li>
-						<li><div title="Delete File" class="notImplemented">Delete</div></li>
-						<li><div title="Edit File" class="notImplemented">Edit</div></li>
-						<li><div title="Import File" class="notImplemented">Import</div></li>
-						<li><div title="Export File" class="notImplemented">Export</div></li>
-						<li><div title="Demo File" class="notImplemented">Demos</div></li>
-					</ul>
-				</li>
-				<li><div><span title="Editor" class="icon icon-pencil notImplemented"></span>Editor</div></li>
-				<li><div><span title="Simulator" class="icon icon-play3 notImplemented"></span>Simulator</div></li>
-				<li><div><span title="Machine" class="icon icon-cogs"></span>Machine</div>
-					<ul>
-						<li><div title="Open Machine">Open Machine</div></li>
-						<li><div title="Machine Settings" class="notImplemented">Machine Settings</div></li>
-						<li><div title="Tool">Tool</div></li>
-					</ul>
-				</li>
-				<li><div><span title="Workpiece" class="icon icon-codepen"></span>Workpiece</div>
-					<ul>
-						<li><div title="Workpiece dimensions">Dimensions</div></li>
-						<li><div title="Workpiece material" class="notImplemented">Material</div></li>
-					</ul>
-				</li>
-				<li><div><span title="Help" class="icon icon-question"></span>Help</div>
-					<ul>
-						<li><div title="License" class="notImplemented">License</div></li>
-						<li><div title="About" class="notImplemented">About</div></li>
-						<li><div title="Documentation">Documentation</div></li>
-						<li><div title="Source code" ><a href="https://github.com/filipecaixeta/cncwebsim/">Source code</a></div></li>
-						<li><div title="Author" ><a href="http://filipecaixeta.com.br/">Author</a></div></li>
-					</ul>
-				</li>
-			</ul>
-		</nav>
+    <div id="editor">
+    </div>
+    <div id="topMenu">
+        <nav>
+            <ul>
+                <li><div><span title="File" class="icon icon-folder-open"></span>File</div>
+                    <ul>
+                        <li><div title="New Project">New</div></li>
+                        <li><div title="Open Project">Open</div></li>
+                        <li><div title="Delete File" class="notImplemented">Delete</div></li>
+                        <li><div title="Edit File" class="notImplemented">Edit</div></li>
+                        <li><div title="Import File" class="notImplemented">Import</div></li>
+                        <li><div title="Export File" class="notImplemented">Export</div></li>
+                        <li><div title="Demo File" class="notImplemented">Demos</div></li>
+                    </ul>
+                </li>
+                <li><div><span title="Editor" class="icon icon-pencil notImplemented"></span>Editor</div></li>
+                <li><div><span title="Simulator" class="icon icon-play3 notImplemented"></span>Simulator</div></li>
+                <li><div><span title="Machine" class="icon icon-cogs"></span>Machine</div>
+                    <ul>
+                        <li><div title="Open Machine">Open Machine</div></li>
+                        <li><div title="Machine Settings" class="notImplemented">Machine Settings</div></li>
+                        <li><div title="Tool">Tool</div></li>
+                    </ul>
+                </li>
+                <li><div><span title="Workpiece" class="icon icon-codepen"></span>Workpiece</div>
+                    <ul>
+                        <li><div title="Workpiece dimensions">Dimensions</div></li>
+                        <li><div title="Workpiece material" class="notImplemented">Material</div></li>
+                    </ul>
+                </li>
+                <li><div><span title="Help" class="icon icon-question"></span>Help</div>
+                    <ul>
+                        <li><div title="License" class="notImplemented">License</div></li>
+                        <li><div title="About" class="notImplemented">About</div></li>
+                        <li><div title="Documentation">Documentation</div></li>
+                        <li><div title="Source code" ><a href="https://github.com/filipecaixeta/cncwebsim/">Source code</a></div></li>
+                        <li><div title="Author" ><a href="http://filipecaixeta.com.br/">Author</a></div></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
         <span id="machineIcon"></span>
-		<div class="debugBtns">
-			<span title="Stop Ctrl-3" id="stopIcon">⏹</span>
-			<span title="Continue Ctrl-5" id="continueIcon">⏯</span>
-			<span title="Step over Ctrl-7" id="stepOverIcon">⏏</span>
-			<span title="Next Ctrl-6" id="nextIcon">⏷</span>
-		</div>
-	</div>
-	<div id="canvasContainer">
-	<div id="messages"></div>
-	</div>
-	<div id="bottomMenu">
-		<span title="Run" id="runIcon" class="icon-play3"></span>
-		<span title="Run Animation" id="runAnimationIcon" class="icon-film"></span>
-		<span title="Display wireframe" id="wireframeIcon" class="icon-codepen"></span>
-		<span title="Auto Run" id="autoRunIcon" class="icon-spinner9"></span>
-		<span title="Save" id="saveIcon" class="icon-floppy-disk"></span>
-		<span title="Simulate 2D" id="run2DIcon" >2D</span>
-		<span title="Simulate 3D" id="run3DIcon" >3D</span>
-		<span title="Toggle grid" id="toggleGrid">▦</span>
-	</div>
+        <div class="debugBtns">
+            <span title="Stop Ctrl-3" id="stopIcon">⏹</span>
+            <span title="Continue Ctrl-5" id="continueIcon">⏯</span>
+            <span title="Step over Ctrl-7" id="stepOverIcon">⏏</span>
+            <span title="Next Ctrl-6" id="nextIcon">⏷</span>
+        </div>
+    </div>
+    <div id="canvasContainer">
+    <div id="messages"></div>
+    </div>
+    <div id="bottomMenu">
+        <span title="Run" id="runIcon" class="icon-play3"></span>
+        <span title="Run Animation" id="runAnimationIcon" class="icon-film"></span>
+        <span title="Display wireframe" id="wireframeIcon" class="icon-codepen"></span>
+        <span title="Auto Run" id="autoRunIcon" class="icon-spinner9"></span>
+        <span title="Save" id="saveIcon" class="icon-floppy-disk"></span>
+        <span title="Simulate 2D" id="run2DIcon" >2D</span>
+        <span title="Simulate 3D" id="run3DIcon" >3D</span>
+        <span title="Toggle grid" id="toggleGrid">▦</span>
+    </div>
 </body>
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

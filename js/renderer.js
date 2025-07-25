@@ -278,42 +278,42 @@ CWS.Renderer.prototype.render = function ()
 CWS.Renderer.prototype.animate = function (meshName)
     {
         if (this[meshName] && this[meshName].animation)
-		{
-			this._runningAnim.push({
-				cb:this.controls.update.bind(this),
-				anim: this[meshName].animation});
-			this[meshName].animation.toggleAnimation(this);
-		}
+        {
+            this._runningAnim.push({
+                cb:this.controls.update.bind(this),
+                anim: this[meshName].animation});
+            this[meshName].animation.toggleAnimation(this);
+        }
 
-		// contiue each frame until animations are done
-		let cnt = 0;
-		const eachFrm = (time)=>{
-			if (this._animationFrame === time) return; // already done this frame
-			for (const o of this._runningAnim)
-			 { o.anim.next(this); o.cb() }
-			this._animationFrame = time;
-			if (this._runningAnim.length) {
-				requestAnimationFrame(eachFrm);
-				if (cnt++ % 10 == 0)
-					this.renderer.render(this.scene, this.camera);
-			}
-		}
-		requestAnimationFrame(eachFrm);
+        // contiue each frame until animations are done
+        let cnt = 0;
+        const eachFrm = (time)=>{
+            if (this._animationFrame === time) return; // already done this frame
+            for (const o of this._runningAnim)
+             { o.anim.next(this); o.cb() }
+            this._animationFrame = time;
+            if (this._runningAnim.length) {
+                requestAnimationFrame(eachFrm);
+                if (cnt++ % 10 == 0)
+                    this.renderer.render(this.scene, this.camera);
+            }
+        }
+        requestAnimationFrame(eachFrm);
     };
 
 CWS.Renderer.prototype.animateFinished = function(anim)
-	{
-		var idx = this._runningAnim.findIndex(o=>o.anim === anim);
-		if (idx !== -1) {
+    {
+        var idx = this._runningAnim.findIndex(o=>o.anim === anim);
+        if (idx !== -1) {
             const anim = this._runningAnim.splice(idx,1);
             if (anim[0].cb) anim[0].cb();
         }
-		this.render(); // trailing render at the end
-	};
+        this.render(); // trailing render at the end
+    };
 
 CWS.Renderer.prototype.animate = function (meshName, cb)
-	{
-		if (!this[meshName] || !this[meshName].animation)
+    {
+        if (!this[meshName] || !this[meshName].animation)
             return cb();
 
         this._runningAnim.push({
@@ -324,21 +324,21 @@ CWS.Renderer.prototype.animate = function (meshName, cb)
 
         const num = this[meshName].geometry.getAttribute('position').count,
               speed = Math.ceil(30/num);
-		// contiNue each frame until animations are done
-		let cnt = 0;
-		const eachFrm = (time)=>{
-			if (this._animationFrame === time) return; // already done this frame
-			for (const o of this._runningAnim)
-			    o.anim.next(this)
-			this._animationFrame = time;
-			if (this._runningAnim.length) {
-				requestAnimationFrame(eachFrm);
-				if (cnt++ % speed == 0)
-					this.renderer.render(this.scene, this.camera);
-			}
-		}
-		requestAnimationFrame(eachFrm);
-	};
+        // contiNue each frame until animations are done
+        let cnt = 0;
+        const eachFrm = (time)=>{
+            if (this._animationFrame === time) return; // already done this frame
+            for (const o of this._runningAnim)
+                o.anim.next(this)
+            this._animationFrame = time;
+            if (this._runningAnim.length) {
+                requestAnimationFrame(eachFrm);
+                if (cnt++ % speed == 0)
+                    this.renderer.render(this.scene, this.camera);
+            }
+        }
+        requestAnimationFrame(eachFrm);
+    };
 
 CWS.Renderer.prototype.addMesh = function (meshName,mesh)
     {

@@ -61,7 +61,7 @@ CWS.Controller = function (editor,storage,renderer,motion)
 
         // update view on mouse events
         this._btnDown = false;
-		cont.addEventListener("mousewheel", ()=>{
+        cont.addEventListener("mousewheel", ()=>{
             this.renderer.controls.update();
             this.render();
         });
@@ -71,11 +71,11 @@ CWS.Controller = function (editor,storage,renderer,motion)
         document.addEventListener("mouseup", () => {
             this._btnDown = false;
         })
-		cont.addEventListener("mousemove", () => {
+        cont.addEventListener("mousemove", () => {
             if (this._btnDown)
                 this.render();
         });
-		window.addEventListener('resize', this.windowResize.bind(this));
+        window.addEventListener('resize', this.windowResize.bind(this));
 
         this.setupKeybind();
 
@@ -226,7 +226,7 @@ CWS.Controller.prototype.openMachine = function(machine)
             if (this.storage.autoRun)
                 this.interpreterRun();
         });
-	};
+    };
 
 CWS.Controller.prototype.workpieceDimensions = function(dimensions)
     {

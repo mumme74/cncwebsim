@@ -94,18 +94,18 @@ CWS.UI = function (controller)
         });
 
         // special debug buttons
-		$("#stopIcon").click(function(){
-			controller.interpreterStop();
-		});
-		$("#continueIcon").click(function () {
-			controller.interpreterContinue();
-		});
-		$("#stepOverIcon").click(function () {
-			controller.interpreterStepOut();
-		});
-		$("#nextIcon").click(function () {
-			controller.interpreterNext();
-		});
+        $("#stopIcon").click(function(){
+            controller.interpreterStop();
+        });
+        $("#continueIcon").click(function () {
+            controller.interpreterContinue();
+        });
+        $("#stepOverIcon").click(function () {
+            controller.interpreterStepOut();
+        });
+        $("#nextIcon").click(function () {
+            controller.interpreterNext();
+        });
     }
 
 CWS.UI.prototype.constructor = CWS.UI;

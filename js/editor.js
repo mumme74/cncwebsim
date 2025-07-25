@@ -13,117 +13,117 @@ const TextHighlightRules = require("ace/mode/text_highlight_rules").TextHighligh
 
 
 CWS.CodeEditor = function ()
-	{
-		var date=new Date();
+    {
+        var date=new Date();
 
-		this.editor = new ace.edit("editor");
-		this.editor.$blockScrolling = Infinity;
-		this.editor.setTheme("ace/theme/monokai");
-		const session = this.editor.getSession();
-		session.setMode("custom/gcode");
-	    session.setUseWrapMode(true);
-	    session.setTabSize(2);
-	    this.editor.setFontSize(16);
-	    this.unsaved = false;
-		this.codeChangedSubscribers = [];
-		this.tokenTooltip = new TokenTooltip(this);
-		this.controller = null; // set by controller
+        this.editor = new ace.edit("editor");
+        this.editor.$blockScrolling = Infinity;
+        this.editor.setTheme("ace/theme/monokai");
+        const session = this.editor.getSession();
+        session.setMode("custom/gcode");
+        session.setUseWrapMode(true);
+        session.setTabSize(2);
+        this.editor.setFontSize(16);
+        this.unsaved = false;
+        this.codeChangedSubscribers = [];
+        this.tokenTooltip = new TokenTooltip(this);
+        this.controller = null; // set by controller
 
-		this.editor.on("guttermousedown", (e) => {
-			const target = e.domEvent.target;
-			if (!target.classList.contains("ace_gutter-cell"))
-				return;
+        this.editor.on("guttermousedown", (e) => {
+            const target = e.domEvent.target;
+            if (!target.classList.contains("ace_gutter-cell"))
+                return;
 
-			const row = e.getDocumentPosition().row;
-			const breakpoints = e.editor.session.getBreakpoints(row, 0);
-			if(breakpoints[row] === undefined)
-				e.editor.session.setBreakpoint(row);
-			else
-				e.editor.session.clearBreakpoint(row);
-			e.stop();
-		});
+            const row = e.getDocumentPosition().row;
+            const breakpoints = e.editor.session.getBreakpoints(row, 0);
+            if(breakpoints[row] === undefined)
+                e.editor.session.setBreakpoint(row);
+            else
+                e.editor.session.clearBreakpoint(row);
+            e.stop();
+        });
 
-		this.editor.on("change", (e)=>
-		{
-			if (e.isLarge)
-				return;
-			this.codeChanged(e);
-		});
+        this.editor.on("change", (e)=>
+        {
+            if (e.isLarge)
+                return;
+            this.codeChanged(e);
+        });
 
-		$(document).ready(()=>{
-			this.setupCompleter();
-		});
-	};
+        $(document).ready(()=>{
+            this.setupCompleter();
+        });
+    };
 
 
 CWS.CodeEditor.prototype.constructor = CWS.CodeEditor;
 
 CWS.CodeEditor.prototype.setupCompleter = function ()
-	{
-		const completer = {
-			getCompletions: function(editor, session, pos, prefix, callback) {
+    {
+        const completer = {
+            getCompletions: function(editor, session, pos, prefix, callback) {
 
-				callback(null, CWS.Interpreter.commands.map((cmd)=>{
-					return {
-							caption:cmd.name,
-							value:cmd.name,
-							meta:cmd.description
-						};
-				}));
-			},
-			identifierRegexps:[/#/,/#\d+/, /#<[\b\d_ ]+>/]
-		};
+                callback(null, CWS.Interpreter.commands.map((cmd)=>{
+                    return {
+                            caption:cmd.name,
+                            value:cmd.name,
+                            meta:cmd.description
+                        };
+                }));
+            },
+            identifierRegexps:[/#/,/#\d+/, /#<[\b\d_ ]+>/]
+        };
 
-		langTools.setCompleters([completer]); //, langTools.textCompleter]);
+        langTools.setCompleters([completer]); //, langTools.textCompleter]);
 
-		this.editor.setOptions({
-			//enableBasicAutocompletion: true,
-			enableSnippets: true,
-			enableLiveAutocompletion: true
-		});
-	}
+        this.editor.setOptions({
+            //enableBasicAutocompletion: true,
+            enableSnippets: true,
+            enableLiveAutocompletion: true
+        });
+    }
 
 CWS.CodeEditor.prototype.codeChanged = function (ev)
-	{
-		const code = this.getCode();
-		const breakPnts = Object.keys(this.editor.getSession().getBreakpoints());
-		for (const cb of this.codeChangedSubscribers)
-			cb(code, breakPnts, ev);
-	};
+    {
+        const code = this.getCode();
+        const breakPnts = Object.keys(this.editor.getSession().getBreakpoints());
+        for (const cb of this.codeChangedSubscribers)
+            cb(code, breakPnts, ev);
+    };
 
 CWS.CodeEditor.prototype.subscribeToCodeChanged = function (func)
-	{
-		this.codeChangedSubscribers.push(func);
-	};
+    {
+        this.codeChangedSubscribers.push(func);
+    };
 
 CWS.CodeEditor.prototype.getCode = function()
-	{
-		return this.editor.getValue();
-	};
+    {
+        return this.editor.getValue();
+    };
 
 CWS.CodeEditor.prototype.setCode = function(code)
-	{
-		this.editor.setValue(code,-1);
-	};
+    {
+        this.editor.setValue(code,-1);
+    };
 
 CWS.CodeEditor.prototype.readOnly = function(ro)
-	{
-		this.editor.setReadOnly(ro);
-	};
+    {
+        this.editor.setReadOnly(ro);
+    };
 
 CWS.CodeEditor.prototype.setCurrentLine = function(lineNr, state)
-	{
-		const markers = this.editor.getSession().getMarkers();
-		for (const [key, obj] of Object.entries(markers))
-			if (obj.clazz==="ace_step")
-				this.editor.getSession().removeMarker(key);
+    {
+        const markers = this.editor.getSession().getMarkers();
+        for (const [key, obj] of Object.entries(markers))
+            if (obj.clazz==="ace_step")
+                this.editor.getSession().removeMarker(key);
 
-		if (lineNr > -1) {
-			this.editor.getSession().highlightLines(lineNr);
-			if (state === 'halted')
-				this.editor.scrollToLine(lineNr)
-		}
-	}
+        if (lineNr > -1) {
+            this.editor.getSession().highlightLines(lineNr);
+            if (state === 'halted')
+                this.editor.scrollToLine(lineNr)
+        }
+    }
 
 
 class TokenTooltip extends Tooltip {
@@ -164,7 +164,7 @@ class TokenTooltip extends Tooltip {
         var session = this.editor.editor.session;
         var docPos = session.screenToDocumentPosition(screenPos.row, screenPos.column);
         var token = session.getTokenAt(docPos.row, docPos.column);
-		var tokenText = "";
+        var tokenText = "";
 
         if (!token && !session.getLine(docPos.row)) {
             token = {
@@ -179,52 +179,52 @@ class TokenTooltip extends Tooltip {
             return;
         }
 
-		const onRecvVlu = (name, value)=>{
-			if (name === token.value) {
-				tokenText = `${token.value}: ${value}`;
+        const onRecvVlu = (name, value)=>{
+            if (name === token.value) {
+                tokenText = `${token.value}: ${value}`;
 
-				this.setText(tokenText);
-				this.width = this.getWidth();
-				this.height = this.getHeight();
-				this.tokenText = tokenText;
-			}
-		}
+                this.setText(tokenText);
+                this.width = this.getWidth();
+                this.height = this.getHeight();
+                this.tokenText = tokenText;
+            }
+        }
 
-		const variableHandler = (caption)=>{
-			const state = this.editor.controller?.motion.state;
-			if (state === "halted") {
-				this.editor.controller.motion.getVariableVlu(
-					token.value, onRecvVlu)
-			} else  {
-				tokenText += `${caption}\n`;
-				const entry = CWS.Interpreter.commands.find(
-					e=>e.name.startsWith('#'));
-				if (entry) tokenText += entry.description;
-			}
-		}
+        const variableHandler = (caption)=>{
+            const state = this.editor.controller?.motion.state;
+            if (state === "halted") {
+                this.editor.controller.motion.getVariableVlu(
+                    token.value, onRecvVlu)
+            } else  {
+                tokenText += `${caption}\n`;
+                const entry = CWS.Interpreter.commands.find(
+                    e=>e.name.startsWith('#'));
+                if (entry) tokenText += entry.description;
+            }
+        }
 
-		switch (token.type) {
-		case 'support.function': case 'keyword.control': {
-			const tok = token.value.replace(/(^[GM])0?([0-9]+$)/i, "$1$2")
-							.toUpperCase();
-			const entry = CWS.Interpreter.commands.find(e=>e.name===tok);
-			if (entry) tokenText += entry.description;
-		} break;
-		case 'variable.other': {
-			variableHandler('Local parameter, only accessible in this procedure');
-		} break;
-		case 'variable.parameter': {
-			variableHandler("Global variable, accessible everywhere\n")
-		} break;
-		case 'support.constant':
-			tokenText += "Virtual linenr, used as a label";
-		  break;
-		case 'support.type':
-			tokenText += "Start a new procedure";
-		  break;
-		default:
-			this.hide();
-		}
+        switch (token.type) {
+        case 'support.function': case 'keyword.control': {
+            const tok = token.value.replace(/(^[GM])0?([0-9]+$)/i, "$1$2")
+                            .toUpperCase();
+            const entry = CWS.Interpreter.commands.find(e=>e.name===tok);
+            if (entry) tokenText += entry.description;
+        } break;
+        case 'variable.other': {
+            variableHandler('Local parameter, only accessible in this procedure');
+        } break;
+        case 'variable.parameter': {
+            variableHandler("Global variable, accessible everywhere\n")
+        } break;
+        case 'support.constant':
+            tokenText += "Virtual linenr, used as a label";
+          break;
+        case 'support.type':
+            tokenText += "Start a new procedure";
+          break;
+        default:
+            this.hide();
+        }
 
         if (this.tokenText != tokenText && tokenText) {
             this.setText(tokenText);
@@ -232,7 +232,7 @@ class TokenTooltip extends Tooltip {
             this.height = this.getHeight();
             this.tokenText = tokenText;
 
-        	this.show(null, this.x, this.y);
+            this.show(null, this.x, this.y);
         }
 
         this.token = token;
@@ -280,83 +280,83 @@ class TokenTooltip extends Tooltip {
 
 // built in highlighter was not correct
 function CustomGcodeHighlightRules() {
-	var keywordsControl = (
-		"IF|DO|WHILE|END|GOTO|THEN"
-		);
+    var keywordsControl = (
+        "IF|DO|WHILE|END|GOTO|THEN"
+        );
 
-	var builtinConstants = (
-		"PI"
-		);
-	var keywordOperators = ("EQ|LT|GT|NE|GE|LE|OR|XOR|MOD");
+    var builtinConstants = (
+        "PI"
+        );
+    var keywordOperators = ("EQ|LT|GT|NE|GE|LE|OR|XOR|MOD");
 
-	var builtinFunctions = (
-		"ATAN|ABS|ACOS|ASIN|SIN|COS|EXP|FIX|FUP|ROUND|LN|TAN"
-		);
-	var keywordMapper = this.createKeywordMapper({
-		"support.function": builtinFunctions,
-		"keyword.control": keywordsControl,
-		"constant.language": builtinConstants,
-	    "keyword.operator": keywordOperators
-	}, "identifier", true);
+    var builtinFunctions = (
+        "ATAN|ABS|ACOS|ASIN|SIN|COS|EXP|FIX|FUP|ROUND|LN|TAN"
+        );
+    var keywordMapper = this.createKeywordMapper({
+        "support.function": builtinFunctions,
+        "keyword.control": keywordsControl,
+        "constant.language": builtinConstants,
+        "keyword.operator": keywordOperators
+    }, "identifier", true);
 
-	this.$rules = {
-		"start" : [ {
-			token : "comment.block",
-			regex : "\\(.*\\)"
-		}, {
-			token : "comment.line",
-			regex : "(;.*)"
-		},{
-			token : "support.constant", // a label kind of thing
-			regex : "([N])([0-9]+)",
+    this.$rules = {
+        "start" : [ {
+            token : "comment.block",
+            regex : "\\(.*\\)"
+        }, {
+            token : "comment.line",
+            regex : "(;.*)"
+        },{
+            token : "support.constant", // a label kind of thing
+            regex : "([N])([0-9]+)",
             caseInsensitive: true
-		}, {
-			token : "support.function",   // commands
-			regex : "([G])([0-9]+\\.?[0-9]?)",
+        }, {
+            token : "support.function",   // commands
+            regex : "([G])([0-9]+\\.?[0-9]?)",
             caseInsensitive: true
-		}, {
-			token : "support.class",     // machine commands
-			regex : "([M])([0-9]+\\.?[0-9]?)",
+        }, {
+            token : "support.class",     // machine commands
+            regex : "([M])([0-9]+\\.?[0-9]?)",
             caseInsensitive: true
-		}, {
-			token : "support.type",
-			regex : "(O[0-9]+)",
-			caseInsensitive: true
-		}, {
-			token : "constant.numeric", // float
-			regex : "([-+]?([0-9]*\\.?[0-9]+\\.?))|(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)"
-		}, {
-			token : keywordMapper,
-			regex : "([A-Z]+)",
+        }, {
+            token : "support.type",
+            regex : "(O[0-9]+)",
             caseInsensitive: true
-		}, {
-			token : "paren.lparen",
-			regex : "([\\[])"
-		}, {
-			token : "paren.rparen",
-			regex : "([\\]])"
-		}, {
-			token : "variable.other", // local variable
-			regex : "(#(?:[0-2][0-9]?|3[0-1]))"
-		}, {
-			token : "variable.parameter", // global variable
-			regex : "(#(?:[3-9][2-9]|\d{3}))"
-		}, {
-			token : "variable.other", // local variable
-			regex : "(#<[A-Z][A-Z_]*>)",
+        }, {
+            token : "constant.numeric", // float
+            regex : "([-+]?([0-9]*\\.?[0-9]+\\.?))|(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)"
+        }, {
+            token : keywordMapper,
+            regex : "([A-Z]+)",
             caseInsensitive: true
-		}, {
-			token : "variable.parameter", // global variable
-			regex : "(#<_[A-Z_]*>)",
+        }, {
+            token : "paren.lparen",
+            regex : "([\\[])"
+        }, {
+            token : "paren.rparen",
+            regex : "([\\]])"
+        }, {
+            token : "variable.other", // local variable
+            regex : "(#(?:[0-2][0-9]?|3[0-1]))"
+        }, {
+            token : "variable.parameter", // global variable
+            regex : "(#(?:[3-9][2-9]|\d{3}))"
+        }, {
+            token : "variable.other", // local variable
+            regex : "(#<[A-Z][A-Z_]*>)",
             caseInsensitive: true
-		}, {
-			token : "keyword.operator",
-			regex : "[-+=\/*]"
-		}, {
-			token : "text",
-			regex : "\\s+"
-		} ]
-	};
+        }, {
+            token : "variable.parameter", // global variable
+            regex : "(#<_[A-Z_]*>)",
+            caseInsensitive: true
+        }, {
+            token : "keyword.operator",
+            regex : "[-+=\/*]"
+        }, {
+            token : "text",
+            regex : "\\s+"
+        } ]
+    };
 }
 
 oop.inherits(CustomGcodeHighlightRules, TextHighlightRules);

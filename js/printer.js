@@ -168,37 +168,37 @@ CWS.Printer.prototype._create3DWorkpiece = function ()
             dataSize: 24,
             step:1,
             animationState: false,
-        	toggleAnimation: function (renderer) {
-        		this.animationState = !this.animationState;
-				if (this.animationState)
-				{
-					this.end = 0;
-					this.next = this._next;
-					this.next(renderer);
-				} else
-					this.stopAnimation(renderer)
-        	},
-        	_next: function (renderer)
-			{
-				if (this.end>this.size)
-				{
-					this.stopAnimation(renderer)
-					return;
-				}
-				this.end += this.step*this.dataSize;
-				while (vcolor[this.end/this.dataSize*2]>=2)
-				{
-					this.end += this.dataSize;
-				}
-				geometry.setDrawRange(this.beg,this.end);
-        	},
-			_nextDef: function(renderer) {},
-			stopAnimation: function(renderer)
-			{
-				this.animationState = false;
-				geometry.setDrawRange(0,Infinity);
-				this.next = this._nextDef;
-				renderer.animateFinished.call(renderer, this);
-			}
+            toggleAnimation: function (renderer) {
+                this.animationState = !this.animationState;
+                if (this.animationState)
+                {
+                    this.end = 0;
+                    this.next = this._next;
+                    this.next(renderer);
+                } else
+                    this.stopAnimation(renderer)
+            },
+            _next: function (renderer)
+            {
+                if (this.end>this.size)
+                {
+                    this.stopAnimation(renderer)
+                    return;
+                }
+                this.end += this.step*this.dataSize;
+                while (vcolor[this.end/this.dataSize*2]>=2)
+                {
+                    this.end += this.dataSize;
+                }
+                geometry.setDrawRange(this.beg,this.end);
+            },
+            _nextDef: function(renderer) {},
+            stopAnimation: function(renderer)
+            {
+                this.animationState = false;
+                geometry.setDrawRange(0,Infinity);
+                this.next = this._nextDef;
+                renderer.animateFinished.call(renderer, this);
+            }
         };
     };
