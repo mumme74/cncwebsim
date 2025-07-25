@@ -64,7 +64,7 @@ CWS.UI = function (controller)
         });
         $("#runIcon").click(function (ev)
         {
-            controller.runInterpreter(true);
+            controller.interpreterRun(true);
         });
         this.settingsButton("#run2DIcon", "run2D", function (ev)
         {

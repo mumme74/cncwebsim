@@ -41,6 +41,34 @@ CWS.Machine.prototype.setMotion = function (motionData)
         this.meshes.mesh3D = false;
     };
 
+// Incrementally add data to already set motion Data
+CWS.Machine.prototype.updateMotion = function (motionData)
+	{
+		const oldSizePos = this.motionData.positions.length,
+			  updateSize = motionData.positions.length,
+			  newSizePos = oldSizePos + updateSize;
+
+		this.motionData.positions = new Float32Array(
+			this.motionData.positions.buffer.transfer(newSizePos*4))
+		for (let i = oldSizePos, j = 0;  i < newSizePos; ++i, ++j)
+			this.motionData.positions[i] = motionData.positions[j];
+
+		const oldSizeCol = this.motionData.color.length,
+		      updateColSz = motionData.color.length,
+			  newColorSz  = updateColSz + oldSizeCol;
+		this.motionData.color = new Float32Array(
+			this.motionData.color.buffer.transfer(newSizePos*4))
+		for (let i = oldSizeCol, j = 0; i < newColorSz; ++i, ++j)
+			this.motionData.color[i] = motionData.color[j];
+
+		this.meshes.mesh2D = false;
+		this.meshes.mesh3D = false;
+	};
+
+CWS.Machine.prototype.create2DWorkpiece = function ()
+	{
+		throw new Error( "call to abstract method" );
+	};
 CWS.Machine.prototype.create2DWorkpiece = function ()
     {
         throw new Error( "call to abstract method" );

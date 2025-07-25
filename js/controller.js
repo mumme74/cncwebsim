@@ -51,11 +51,9 @@ CWS.Controller = function (editor,storage,renderer,motion)
             this.openProject(this.storage.header.name);
 
         // Init the editor
-        var controller = this;
-        this.editor.subscribeToCodeChanged(function (code,ev)
-        {
-            controller.save();
-            controller.runInterpreter();
+        this.editor.subscribeToCodeChanged((code,ev) => {
+            this.save();
+            this.runInterpreter();
         });
 
         // Add the renderer to the container
@@ -81,20 +79,20 @@ CWS.Controller = function (editor,storage,renderer,motion)
             }
         });
 
+        this.setupKeybind();
+
         // Set renderer size
         this.windowResize();
         // Save changes every 60 seconds
-        setInterval(function ()
-            {
-                if (controller.saveFlag===0)
+        setInterval(() => {
+                if (this.saveFlag===0)
                     return;
-                controller.save(true);
+                this.save(true);
             }, 60000);
-        $(window).bind("beforeunload", function()
-        {
-            if (controller.saveFlag===0)
+        $(window).bind("beforeunload", () => {
+            if (this.saveFlag===0)
                 return;
-            controller.save(true);
+            this.save(true);
         });
 
         // notify subitems about our existance, so they can set there defaults.
@@ -108,11 +106,38 @@ CWS.Controller = function (editor,storage,renderer,motion)
         // finally render it.
         requestAnimationFrame(()=>{
             if (this.storage.autoRun)
-                controller.runInterpreter();
+                this.interpreterRun();
         });
     };
 
 CWS.Controller.prototype.constructor = CWS.Controller;
+
+CWS.Controller.prototype.setupKeybind = function ()
+    {
+        $(window).bind('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            switch (String.fromCharCode(e.which).toLowerCase()) {
+            case 's': // Ctrl+s => save
+                this.save(true);
+                break;
+            case '4': // Ctrl-4 => Run
+                this.interpreterRun();
+                break;
+            case '5': // Ctrl-5 => Start debug
+                this.interpreterContinue();
+                break;
+            case '6': // Ctrl-6 => next step
+                this.interpreterNext();
+                break;
+            case '7': // Ctrl-7 => Step out
+                this.interpreterStepOut();
+                break;
+            default:
+                return; // don't stop event propagation
+            }
+            e.preventDefault();
+        }});
+    }
 
 CWS.Controller.prototype.createProject = function(data)
     {
@@ -193,8 +218,8 @@ CWS.Controller.prototype.openMachine = function(machine)
         this.storage.machine = CWS.Project.createDefaultMachine(machine);
         this.storage.workpiece = CWS.Project.createDefaultWorkpiece(machine);
         this.loadMachine();
-        this.runInterpreter();
-    };
+        this.interpreterRun();
+	};
 
 CWS.Controller.prototype.workpieceDimensions = function(dimensions)
     {
@@ -243,7 +268,7 @@ CWS.Controller.prototype.setWorkpieceDimensions = function(dimensions)
                         y:this.storage.workpiece.y,z:this.storage.workpiece.z});
             break;
         case "3D Printer":
-            this.runInterpreter();
+            this.interpreterRun();
             break;
         }
 
@@ -395,21 +420,50 @@ CWS.Controller.prototype.save = function(forceSave)
         }
     };
 
-CWS.Controller.prototype.runInterpreter = function(forceRun)
+CWS.Controller.prototype._initInterpreter = function()
+    {
+        const code = this.editor.getCode();
+        const breakPnts = Object.keys(
+            this.editor.editor.getSession().getBreakpoints()).map(v=>+v);
+        this.motion.setData({ header:this.storage.header, code:code});
+        this.motion.setBreakpoints(breakPnts);
+    }
+
+CWS.Controller.prototype.interpreterRun = function(forceRun)
     {
         if (!this.storage.autoRun && !forceRun)
             return;
         // Don't update before have typed to the end
-        var _this = this;
         clearTimeout(CWS.Controller._interpretTmr);
-        CWS.Controller._interpretTmr = setTimeout(function () {
-            var code = _this.editor.getCode();
-            _this.motion.setData({ header: _this.storage.header,
-                                    code:code});
-            _this.displayMessage("Running G Code");
-            _this.motion.run();
+        CWS.Controller._interpretTmr = setTimeout(() => {
+            this._initInterpreter();
+            this.displayMessage("Running G Code");
+            this.motion.run();
         }, forceRun ? 3000 : 0);
     };
+
+CWS.Controller.prototype.interpreterContinue = function()
+    {
+        this._initInterpreter();
+        this.displayMessage("Debugging G Code");
+        this.motion.contin();
+    }
+
+CWS.Controller.prototype.interpreterNext = function()
+    {
+        this.motion.next();
+    }
+
+CWS.Controller.prototype.interpreterStepOut = function()
+    {
+        this.motion.stepOut();
+    }
+
+CWS.Controller.prototype.interpreterStop = function()
+    {
+        this.motion.stop();
+        this.editor.setCurrentLine(-1, this.motion.state);
+    }
 
 CWS.Controller.prototype.updateWorkpieceDraw = function()
     {
@@ -421,14 +475,24 @@ CWS.Controller.prototype.updateWorkpieceDraw = function()
         this.update3D();
 
         if (this.machine.mtype==="3D Printer" && boundingSphere===false)
-            this.renderer.lookAt3DPrinter(this.machine.boundingSphere.center,this.machine.boundingSphere.radius);
+            this.renderer.lookAt3DPrinter(
+                this.machine.boundingSphere.center,
+                this.machine.boundingSphere.radius);
 
         if (this.machine.motionData.error.length!==0)
-            this.displayMessage(this.machine.motionData.error[0],true);
+        {
+            this.displayMessage(this.machine.motionData.error[0].message,true);
+            const errArr = [];
+            for (const e of this.machine.motionData.error)
+                errArr.push({row:e.line-1, type:"error", text:e.message});
+            this.editor.editor.getSession().setAnnotations(errArr);
+        }
         else
+        {
             this.displayMessage();
-
-        this.render();
+            this.editor.editor.getSession().setAnnotations([]);
+            this.render();
+        }
     };
 
 CWS.Controller.prototype.update2D = function()

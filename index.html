@@ -11,7 +11,9 @@
     <title>CNC Web Simulator</title>
     <script src="js/libs/lz-string.min.js"></script>
     <script src="js/libs/ace/ace.js"></script>
+    <script src="js/libs/ace/ext-language_tools.js"></script>
     <script src="js/libs/jquery-1.12.0.min.js"></script>
+    <script src="js/libs/jquery-ui.min.js"></script>
     <script src="js/libs/jquery-ui.min.js"></script>
     <script src="js/libs/three.js"></script>
     <script src="js/libs/dat.gui.js"></script>
@@ -24,6 +26,7 @@
     <script src="js/cws.js"></script>
 	<script src="js/storage.js"></script>
 	<script src="js/project.js"></script>
+	<script src="js/interpreter.js"></script>
 	<script src="js/editor.js"></script>
 	<script src="js/unitgrid.js"></script>
 	<script src="js/renderer.js"></script>
@@ -37,6 +40,7 @@
 	<script src="js/controller.js"></script>
 	<script src="js/viewdirection.js"></script>
 	<script src="js/ui.js"></script>
+
 
 	<script type="text/javascript">
 	var controller,ui;
@@ -61,7 +65,7 @@
 		}
 
 		window.addEventListener( 'resize', onWindowResize, false );
-		controller.runInterpreter();
+		controller.interpreterRun();
 	}),true);
 </script>
 </head>
@@ -109,6 +113,12 @@
 			</ul>
 		</nav>
         <span id="machineIcon"></span>
+		<div class="debugBtns">
+			<span title="Stop Ctrl-3" id="stopIcon">⏹</span>
+			<span title="Continue Ctrl-5" id="continueIcon">⏯</span>
+			<span title="Step over Ctrl-7" id="stepOverIcon">⏏</span>
+			<span title="Next Ctrl-6" id="nextIcon">⏷</span>
+		</div>
 	</div>
 	<div id="canvasContainer">
 	<div id="messages"></div>

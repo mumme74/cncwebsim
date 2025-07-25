@@ -174,6 +174,7 @@ CWS.Lathe.prototype.initGeometry3D = function ()
             index[ii++] = i1;
             index[ii++] = i2+1;
 
+
             index[ii++] = i2+1;
             index[ii++] = i2+segments+1;
             index[ii++] = i1+segments;

@@ -135,6 +135,15 @@ nav > ul > li > div:hover > span
 	width: 25%;
 	min-width: 300px;
 }
+.ace_gutter-cell.ace_breakpoint
+{
+	padding-left:0;
+}
+.ace_gutter-cell.ace_breakpoint::before
+{
+	color: #d14826;
+	content: "⏺";
+}
 #canvasContainer
 {
 	z-index: 10;
@@ -275,11 +284,27 @@ nav > ul > li > div:hover > span
     font-size: 15;
     content: "x";
 }
+.debugBtns
+{
+    color: #dfdbd2;
+    position: absolute;
+    right: 10;
+    top: 0;
+    text-align: right;
+    margin: 5px;
+    font-size: 20px;
+}
+.debugBtns > span:hover
+{
+	background-color: #4e4c46;
+	color: #d1c2af;
+}
+
 #machineIcon
 {
     color: #dfdbd2;
     position: absolute;
-    right: 0;
+    right: 100;
     top: 0;
     text-align: right;
     margin: 5px;
