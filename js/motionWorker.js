@@ -2,7 +2,6 @@
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
  */
 
-
 var CWS = {};
 
 importScripts("parser.js");
@@ -87,8 +86,8 @@ class MotionInterp {
 		}
 
 		const oldPos = this.interpreter.getPos() - this.noMoveCmdCnt,
-			  int = this.interpreter,
-		      lineNr = this.interpreter.outputCommands[
+			  int = this.interpreter;
+		let lineNr = this.interpreter.outputCommands[
 					this.interpreter.getPos()]?.cmd.line.lineNumber;
 		if (lineNr === undefined) {
 			this.state = MotionInterp.Idle; // already at EOF
@@ -101,7 +100,7 @@ class MotionInterp {
 			if (cmd.noMoveCmdCnt)
 				this.noMoveCmdCnt++;
 			else
-				this.#calcCmd(cmd);
+				this.#calcCmd(cmd, int.getPos()-1);
 
 			// continue until we cleared this line.
 			if (cmd.cmd.line.lineNumber !== lineNr)
@@ -115,7 +114,8 @@ class MotionInterp {
 		const p = endPos * 6, c = endPos * 2;
 		const res = {positions:this.positions.slice(oldPos * 6, p),
 			         color:this.color.slice(oldPos*2, c),
-			         error:this.errList, atLine: cmd.cmd.line.lineNumber-1,
+			         error:this.errList,
+					 atLine: cmd ? cmd.cmd.line.lineNumber-1 : -1,
 					 state: this.state};
 		return res;
 	}
@@ -184,7 +184,7 @@ class MotionInterp {
 		      startPos = int.getPos() - this.noMoveCmdCnt;
 		end = Math.min(end, int.outputCommands.length);
 		while (int.getPos() < end) {
-			cmd = this.interpreter.getCommand();
+			cmd = int.getCommand();
 			// only break on this commands that have another line
 			// G02-G03 produces many cmds for the same line
 			lineNr = cmd.cmd.line.lineNumber;
@@ -200,7 +200,7 @@ class MotionInterp {
 			if (cmd.noMove) // might be a debugcmd
 				this.noMoveCmdCnt++;
 			else
-				this.#calcCmd(cmd);
+				this.#calcCmd(cmd, int.getPos()-1);
 		}
 		const endPos = int.getPos() - this.noMoveCmdCnt;
 		return {positions:this.positions.slice(startPos*6, endPos * 6),
@@ -210,9 +210,9 @@ class MotionInterp {
 				state: this.state};
 	}
 
-	#calcCmd(cmd) {
-		const i = (this.interpreter.getPos() - this.noMoveCmdCnt) * 6,
-		      c = (this.interpreter.getPos() - this.noMoveCmdCnt) * 2;
+	#calcCmd(cmd, pos) {
+		const i = (pos - this.noMoveCmdCnt) * 6,
+		      c = (pos - this.noMoveCmdCnt) * 2;
 		this.positions[ i + 0 ] = cmd.x0;
 		this.positions[ i + 1 ] = cmd.y0;
 		this.positions[ i + 2 ] = cmd.z0;

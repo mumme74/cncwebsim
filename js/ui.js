@@ -60,7 +60,7 @@ CWS.UI = function (controller)
         {
             controller.storage.autoRun=!controller.storage.autoRun;
             if (controller.storage.autoRun)
-                controller.runInterpreter(true);
+                controller.interpreterRun(true);
         });
         $("#runIcon").click(function (ev)
         {
@@ -86,7 +86,21 @@ CWS.UI = function (controller)
         });
         this.settingsButton("#toggleGrid", "gridHelper", ()=>{
             controller.storage.gridHelper=!controller.storage.gridHelper;
-        })
+        });
+
+        // special debug buttons
+		$("#stopIcon").click(function(){
+			controller.interpreterStop();
+		});
+		$("#continueIcon").click(function () {
+			controller.interpreterContinue();
+		});
+		$("#stepOverIcon").click(function () {
+			controller.interpreterStepOut();
+		});
+		$("#nextIcon").click(function () {
+			controller.interpreterNext();
+		});
     }
 
 CWS.UI.prototype.constructor = CWS.UI;

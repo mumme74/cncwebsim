@@ -12,6 +12,7 @@ CWS.Renderer = function (id,options)
         const rect  = this.container.getBoundingClientRect();
         this.width  = options.width  || rect.width;
         this.height = options.height || rect.height;
+        this._runningAnim = [];
 
         this.controller = null; // set by controller in constructor
 
@@ -278,18 +279,6 @@ CWS.Renderer.prototype.animate = function (b,meshName)
         if (this[meshName] && this[meshName].animation)
             this[meshName].animation.touggleAnimation();
     };
-CWS.Renderer.prototype.render = function (controls)
-	{
-		if (this['2DWorkpiece'] && this['2DWorkpiece'].animation)
-		{
-			this['2DWorkpiece'].animation.next(this)
-		}
-		if (this['3DWorkpiece'] && this['3DWorkpiece'].animation)
-		{
-			this['3DWorkpiece'].animation.next(this);
-		}
-		this.renderer.render( this.scene, this.camera );
-	};
 
 CWS.Renderer.prototype.animateFinished = function(anim)
 	{

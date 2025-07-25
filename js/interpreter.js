@@ -65,10 +65,10 @@ CWS.Interpreter = function (machine, parser)
 
         this.N_ARC_CORRECTION = 0;
 
-		this.invertRadius = 1;
+		this.invertRadius = false;
 		if (this.machineType=="Lathe")
 		{
-			this.invertRadius = -1;
+			this.invertRadius = true;
 			this.g18({number:18});
 		}
 		else if (this.machineType=="Mill")
@@ -391,10 +391,12 @@ CWS.Interpreter.prototype._arc  = function (prgCmd, gNumber)
 	{
 		cmd.param.r *= this.modal.units;
 		const r = cmd.param.r;
+		if (this.invertRadius)
+			gNumber = gNumber == 3 ? 2 : 3;
 
 		// Pythagoras
 		const dist = Math.sqrt(x*x + y*y);
-		if (r < dist / 2)
+		if (cmd.param.r < dist / 2)
 			throw new CWS.ErrorInterpreter(cmd.line.lineNumber,
 				"Radius too small", cmd.line.rawLine);
 
@@ -558,9 +560,9 @@ CWS.Interpreter.prototype._arc  = function (prgCmd, gNumber)
     }
 
 	if (!cmd.param.ijk[this.axisIJK_linear] && (
-		Math.abs(this.position[this.axisXYZ_0] - cmd.param.xyz.x) > 0.2 ||
-        Math.abs(this.position[this.axisXYZ_1] - cmd.param.xyz.y) > 0.2 ||
-		Math.abs(this.position[this.axisXYZ_linear] - cmd.param.xyz.z) > 0.2)
+		Math.abs(this.position.x - cmd.param.xyz.x) > 0.2 ||
+        Math.abs(this.position.y - cmd.param.xyz.y) > 0.2 ||
+		Math.abs(this.position.z - cmd.param.xyz.z) > 0.2)
 	)
 		this.errList.push(new CWS.ErrorInterpreter(cmd.line.lineNumber,
 			`Arc does not close properly`));

@@ -1,5 +1,6 @@
 /**
  * @author Filipe Caixeta / http://filipecaixeta.com.br/
+ * @author Fredrik Johansson / github.com/mumme74
  */
 
 // states that motion can have, including debug
@@ -101,35 +102,33 @@ CWS.Motion.prototype.postMessage = function (state, extra)
 CWS.Motion.prototype.setController = function (controller)
 	{
 		this.controller = controller;
-		var _this=this;
-		this.worker.onmessage = function (e)
-		{
+		this.worker.onmessage = (e) => {
 			if (e.data.error?.length!=0)
 				console.log(e.data.error);
 
 			if (e.data.positions?.length) {
-				if (_this.state === CWS.MotionStates.Running ||
-					_this.state === CWS.MotionStates.Continue)
+				if (this.state === CWS.MotionStates.Running ||
+					this.state === CWS.MotionStates.Continue)
 				{
-					_this.controller.machine.setMotion(e.data);
+					this.controller.machine.setMotion(e.data);
 				} else
-					_this.controller.machine.updateMotion(e.data);
+					this.controller.machine.updateMotion(e.data);
 			}
 
 			if (e.data.state) {
-				_this.state = e.data.state;
-				_this.atLine   = e.data.atLine;
+				this.state = e.data.state;
+				this.atLine   = e.data.atLine;
 
 				if (e.data.positions.length) // might be a debug cmd
-					_this.controller.updateWorkpieceDraw();
-				_this.controller.editor.setCurrentLine(_this.atLine, _this.state);
+					this.controller.updateWorkpieceDraw();
+				this.controller.editor.setCurrentLine(this.atLine, this.state);
 
 				if (e.data.state === CWS.MotionStates.Idle)
-					_this.data = null;
+					this.data = null;
 			} else if (e.data.extra) {
-				_this.varVluCb(e.data.extra, e.data.value);
-				_this.varVluCb = null;
+				this.varVluCb(e.data.extra, e.data.value);
+				this.varVluCb = null;
 			}
-			_this.inflight = false;
+			this.inflight = false;
 		};
 	};

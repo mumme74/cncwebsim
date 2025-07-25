@@ -102,12 +102,6 @@ CWS.Controller = function (editor,storage,renderer,motion)
         // finally when renderer finished it's setup, create axis viewhelper
         this.dirPointer = new ViewHelper(this.renderer,
             document.querySelector("#canvasContainer"));
-
-        // finally render it.
-        requestAnimationFrame(()=>{
-            if (this.storage.autoRun)
-                this.interpreterRun();
-        });
     };
 
 CWS.Controller.prototype.constructor = CWS.Controller;
@@ -166,6 +160,9 @@ CWS.Controller.prototype.openProject = function(projectName)
             }
         this.loadMachine();
         this.editor.setCode(this.storage.code);
+        if (this.storage.autoRun)
+            this.interpreterRun();
+        this.renderer.setController(this); // reset grid plane
     };
 
 CWS.Controller.prototype.loadMachine = function()
@@ -182,7 +179,6 @@ CWS.Controller.prototype.loadMachine = function()
             this.renderer.lookAtLathe({x:this.storage.workpiece.x,z:this.storage.workpiece.z});
             this.renderer.addMesh("2DWorkpiece",this.machine.mesh2D);
             this.renderer.addMesh("3DWorkpiece",this.machine.mesh3D);
-            this.updateWireframe();
         }
         else if (this.storage.machineType=="Mill")
         {
@@ -196,7 +192,6 @@ CWS.Controller.prototype.loadMachine = function()
                         y:this.storage.workpiece.y,z:this.storage.workpiece.z});
             this.renderer.addMesh("2DWorkpiece",this.machine.mesh2D);
             this.renderer.addMesh("3DWorkpiece",this.machine.mesh3D);
-            this.updateWireframe();
         }
         else if (this.storage.machineType=="3D Printer")
         {
@@ -209,8 +204,15 @@ CWS.Controller.prototype.loadMachine = function()
                         y:this.storage.machine.dimension.y,z:this.storage.machine.dimension.z});
             this.renderer.addMesh("2DWorkpiece",this.machine.mesh2D);
             this.renderer.addMesh("3DWorkpiece",this.machine.mesh3D);
-            this.updateWireframe();
         }
+
+        // finally render it.
+        requestAnimationFrame(()=>{
+            if (this.storage.autoRun)
+                this.interpreterRun();
+        });
+        this.renderer.setController(this); // reset grid plane
+        this.updateWireframe();
     };
 
 CWS.Controller.prototype.openMachine = function(machine)
@@ -218,7 +220,11 @@ CWS.Controller.prototype.openMachine = function(machine)
         this.storage.machine = CWS.Project.createDefaultMachine(machine);
         this.storage.workpiece = CWS.Project.createDefaultWorkpiece(machine);
         this.loadMachine();
-        this.interpreterRun();
+        // finally render it.
+        requestAnimationFrame(()=>{
+            if (this.storage.autoRun)
+                this.interpreterRun();
+        });
 	};
 
 CWS.Controller.prototype.workpieceDimensions = function(dimensions)
@@ -389,6 +395,7 @@ CWS.Controller.prototype.windowResize = function()
         this.renderer.controls.handleResize();
         this.renderer.setSize(maincanvasdiv.offsetWidth,
                               maincanvasdiv.offsetHeight);
+        requestAnimationFrame(this.render.bind(this));
     };
 
 CWS.Controller.prototype.render = function(forceUpdate)
