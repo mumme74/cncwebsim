@@ -46,8 +46,8 @@ CWS.Lathe.prototype.initWebGL = function ()
 
         // boilerplate for later calling the shader program
         // aka delegate computation to that.
-        // vs-lathe-1-3D virtual-size sets distance in Z
-        // fs-lathe-1-3D full-size converted to 16bit by drawing colors 16bits.
+        // vs-lathe-1-3D vertex-shader sets distance in Z
+        // fs-lathe-1-3D fragment-shader pixels converted to 16bit by drawing.
         this.shaderProgram1 = this.createProgram(this.gl,
             CWS.SHADER["vs-lathe-1-3D"], CWS.SHADER["fs-lathe-1-3D"]);
 
