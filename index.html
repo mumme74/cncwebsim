@@ -53,22 +53,12 @@
         	);
 
 		ui = new CWS.UI(controller);
-		var stats = ui.createStats(true);
 
 		function onWindowResize()
 		{
 			controller.windowResize();
 			ui.resize();
 		}
-
-		function animate()
-		{
-			requestAnimationFrame( animate );
-			stats.update();
-			controller.motion.run();
-			controller.render();
-		}
-		animate();
 
 		window.addEventListener( 'resize', onWindowResize, false );
 		controller.runInterpreter();

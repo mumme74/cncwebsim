@@ -11,7 +11,7 @@ CWS.Machine = function (options)
         this.workpiece = options.workpiece;
         this.machine = options.machine;
         this.material3D = options.material3D;
-        this.lineColors = options.lineColors || {    g0: new THREE.Color(1,0,0),
+        this.lineColors = options.lineColors || {   g0: new THREE.Color(1,0,0),
                                                     g1: new THREE.Color(0,0,1),
                                                     g2: new THREE.Color(1,0,1),
                                                     g3: new THREE.Color(0,1,1),};

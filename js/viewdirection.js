@@ -179,6 +179,9 @@ class ViewHelper {
         this.rotateTowards(this.editor.camera.quaternion,
                            this.targetQuaternion, step);
 
+        this.editor.controls.update();
+        this.editor.render();
+
         if (this.angleTo(this.q1, this.q2) === 0)
             this.animating = false;
         else

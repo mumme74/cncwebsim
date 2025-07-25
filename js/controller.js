@@ -13,48 +13,74 @@ CWS.Controller = function (editor,storage,renderer,motion)
 
         this.saveFlag = 0;
 
+        const update = ()=>{
+            const onUpdate = ()=>{
+                this.renderer.controls.update();
+                this.render();
+            }
+            requestAnimationFrame(onUpdate);
+        }
+
         // ide settings
-        storage.defineVariable("ideSettings.autoRun",      true);
-        storage.defineVariable("ideSettings.run3D",        true);
-        storage.defineVariable("ideSettings.run2D",        true);
-        storage.defineVariable("ideSettings.runWireframe", true,
-            (vlu)=>{this.machine.meshWorkpiece.visible = vlu}
-        );
-        storage.defineVariable("ideSettings.cameraType",   false,
-            (vlu)=>{ this.renderer.setCamera(vlu); }
-        );
-        storage.defineVariable("ideSettings.gridHelper",   true,
-            (vlu)=>{
-                this.renderer.setGridHelper(vlu, this.storage.gridInInches);
-            }
-        );
-        storage.defineVariable("ideSettings.gridInInches", false,
-            (vlu)=>{
-                this.renderer.setGridHelper(this.storage.gridHelper, vlu);
-            }
-        );
+        storage.defineVariable("ideSettings.autoRun", true, update);
+        storage.defineVariable("ideSettings.run3D", true, update);
+        storage.defineVariable("ideSettings.run2D", true, update);
+        storage.defineVariable("ideSettings.runWireframe", true, (vlu)=>{
+            this.machine.meshWorkpiece.visible = vlu;
+            update();
+        });
+        storage.defineVariable("ideSettings.cameraType", false, (vlu)=>{
+            this.renderer.setCamera(vlu);
+            update();
+        });
+        storage.defineVariable("ideSettings.gridHelper", true, (vlu)=>{
+            this.renderer.setGridHelper(vlu, this.storage.gridInInches);
+            update();
+        });
+        storage.defineVariable("ideSettings.gridInInches", false, (vlu)=>{
+            this.renderer.setGridHelper(this.storage.gridHelper, vlu);
+            update();
+        });
 
         this.createDatGUI();
 
         // Init the storage
         if (this.storage.isFirstRun)
-            {
-                this.createProject({projectName:"Untitled",machineType:"Lathe"});
-            }
+            this.createProject({projectName:"Untitled",machineType:"Lathe"});
         else
-            {
-                this.openProject(this.storage.header.name);
-            }
+            this.openProject(this.storage.header.name);
+
         // Init the editor
         var controller = this;
         this.editor.subscribeToCodeChanged(function (code,ev)
         {
             controller.save();
-        });
-        this.editor.subscribeToCodeChanged(function (code,ev)
-        {
             controller.runInterpreter();
         });
+
+        // Add the renderer to the container
+        var cont = document.getElementById("canvasContainer");
+        cont.appendChild(renderer.domElement);
+
+        // update view on mouse events
+        this._btnDown = false;
+		cont.addEventListener("mousewheel", ()=>{
+            this.renderer.controls.update();
+            this.render();
+        });
+        cont.addEventListener("mousedown", () => {
+            this._btnDown = true;
+        });
+        document.addEventListener("mouseup", () => {
+            this._btnDown = false;
+        })
+		cont.addEventListener("mousemove", (event) => {
+            if (controller._btnDown) {
+                this.renderer.controls.update();
+                this.render(event);
+            }
+        });
+
         // Set renderer size
         this.windowResize();
         // Save changes every 60 seconds
@@ -78,6 +104,12 @@ CWS.Controller = function (editor,storage,renderer,motion)
         // finally when renderer finished it's setup, create axis viewhelper
         this.dirPointer = new ViewHelper(this.renderer,
             document.querySelector("#canvasContainer"));
+
+        // finally render it.
+        requestAnimationFrame(()=>{
+            if (this.storage.autoRun)
+                controller.runInterpreter();
+        });
     };
 
 CWS.Controller.prototype.constructor = CWS.Controller;
@@ -337,7 +369,7 @@ CWS.Controller.prototype.windowResize = function()
 CWS.Controller.prototype.render = function(forceUpdate)
     {
         this.renderer.render();
-        this.dirPointer.render();
+        this.dirPointer?.render();
     };
 
 CWS.Controller.prototype.save = function(forceSave)
@@ -354,7 +386,12 @@ CWS.Controller.prototype.save = function(forceSave)
         else {
             $("#saveIcon").css('color', 'green');
             this.saveFlag=0;
-            this.storage.code = this.editor.getCode();
+            // wait 3s before autosave, let us breathe a little...
+            clearTimeout(CWS.Controller._savetimer);
+            var _this = this;
+            CWS.Controller._savetimer = setTimeout(function(){
+                _this.storage.code = _this.editor.getCode();
+            }, forceSave ? 3000 : 0);
         }
     };
 
@@ -362,11 +399,16 @@ CWS.Controller.prototype.runInterpreter = function(forceRun)
     {
         if (!this.storage.autoRun && !forceRun)
             return;
-        var code = this.editor.getCode();
-        this.motion.setData({ header:this.storage.header,
-                                code:code});
-        this.displayMessage("Running G Code");
-        this.motion.run();
+        // Don't update before have typed to the end
+        var _this = this;
+        clearTimeout(CWS.Controller._interpretTmr);
+        CWS.Controller._interpretTmr = setTimeout(function () {
+            var code = _this.editor.getCode();
+            _this.motion.setData({ header: _this.storage.header,
+                                    code:code});
+            _this.displayMessage("Running G Code");
+            _this.motion.run();
+        }, forceRun ? 3000 : 0);
     };
 
 CWS.Controller.prototype.updateWorkpieceDraw = function()
@@ -385,6 +427,8 @@ CWS.Controller.prototype.updateWorkpieceDraw = function()
             this.displayMessage(this.machine.motionData.error[0],true);
         else
             this.displayMessage();
+
+        this.render();
     };
 
 CWS.Controller.prototype.update2D = function()
@@ -404,12 +448,13 @@ CWS.Controller.prototype.update3D = function()
 CWS.Controller.prototype.updateWireframe = function()
     {
         this.renderer.addMesh("2DWorkpieceDash",this.machine.meshWorkpiece);
+        this.render();
     };
 
 CWS.Controller.prototype.runAnimation = function(animate)
     {
-        this.renderer.animate(animate,"2DWorkpiece");
-        this.renderer.animate(animate,"3DWorkpiece");
+        this.renderer.animate("2DWorkpiece", ()=>this.controls.update());
+        this.renderer.animate("3DWorkpiece", ()=>this.controls.update());
     };
 
 CWS.Controller.prototype.displayMessage = function(message,error)
