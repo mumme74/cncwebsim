@@ -46,8 +46,9 @@ class ViewHelper {
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         this.controls.update();
         this.renderer.render(this.scene, this.camera);
-        this.controls.enableZoom = false;
+        this.controls.enableZoom   = false;
         this.controls.enableRotate = false;
+        this.controls.enablePan    = false;
         this.camera.addEventListener('change', (e)=>this.update(e));
 
         this.light = new THREE.AmbientLight(0xffaaff);
