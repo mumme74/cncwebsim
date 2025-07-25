@@ -58,14 +58,6 @@
 
 		ui = new CWS.UI(controller);
 
-		function onWindowResize()
-		{
-			controller.windowResize();
-			ui.resize();
-		}
-
-		window.addEventListener( 'resize', onWindowResize, false );
-		controller.interpreterRun();
 	}),true);
 </script>
 </head>

@@ -132,12 +132,12 @@ CWS.Machine.prototype.create2DWorkpiece = function ()
         this.mesh2D.visible = true;
         // MAYBE MISSING SOMETHING ABOUT POSITION
         if (this.machine.mtype==="Lathe")
-            this.mesh2D.position.z = -this.workpiece.z/2;
+            this.mesh2D.position.z = -this.workpiece.z/2 || 0;
         else
         {
-            this.mesh2D.position.x = -this.workpiece.x/2;
-            this.mesh2D.position.y = -this.workpiece.y/2;
-            this.mesh2D.position.z = -this.workpiece.z/2;
+            this.mesh2D.position.x = -this.workpiece.x/2 || 0;
+            this.mesh2D.position.y = -this.workpiece.y/2 || 0;
+            this.mesh2D.position.z = -this.workpiece.z/2 || 0;
         }
         if (this.meshes.mesh2D === true)
             return;

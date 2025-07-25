@@ -364,8 +364,12 @@ CWS.Renderer.prototype.setGridHelper = function (on, inInches)
         if (on) {
             const normalPlane = this.controller.machine.normalPlane,
                   workpiece   = this.controller.machine.workpiece,
-                  size = Math.max(500, workpiece.x, workpiece.y);
-            this.gridHelper = new UnitGrid(inInches, size, normalPlane !== 'XY');
+                  defaultSize =500,
+                  size = Math.max(defaultSize, workpiece.x,
+                                  workpiece.y || workpiece.z);
+            this.gridHelper = new UnitGrid(
+                inInches, size || defaultSize, normalPlane !== 'XY');
             this.scene.add(this.gridHelper);
+            this.render();
         }
     }

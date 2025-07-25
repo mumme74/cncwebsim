@@ -7,6 +7,8 @@
 CWS.UI = function (controller)
     {
         this.controller = controller;
+        window.addEventListener('resize',this.resize.bind(this));
+
         var topMenu = $("#topMenu");
         $("#topMenu>nav > ul > li").each(function(i){$(this)
             .mouseenter(function(){topMenu.css('height','90px');})

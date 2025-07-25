@@ -15,7 +15,6 @@ CWS.Controller = function (editor,storage,renderer,motion)
 
         const update = ()=>{
             const onUpdate = ()=>{
-                this.renderer.controls.update();
                 this.render();
             }
             requestAnimationFrame(onUpdate);
@@ -72,12 +71,11 @@ CWS.Controller = function (editor,storage,renderer,motion)
         document.addEventListener("mouseup", () => {
             this._btnDown = false;
         })
-		cont.addEventListener("mousemove", (event) => {
-            if (controller._btnDown) {
-                this.renderer.controls.update();
-                this.render(event);
-            }
+		cont.addEventListener("mousemove", () => {
+            if (this._btnDown)
+                this.render();
         });
+		window.addEventListener('resize', this.windowResize.bind(this));
 
         this.setupKeybind();
 
@@ -200,8 +198,11 @@ CWS.Controller.prototype.loadMachine = function()
                 machine: this.storage.machine,
                 material3D: this.material3D,
                 workpiece: this.storage.workpiece});
-            this.renderer.lookAt3DPrinter({x:this.storage.machine.dimension.x,
-                        y:this.storage.machine.dimension.y,z:this.storage.machine.dimension.z});
+            this.renderer.lookAt3DPrinter({
+                x:this.storage.machine.dimension.x,
+                y:this.storage.machine.dimension.y,
+                z:this.storage.machine.dimension.z
+            }, this.storage.machine.dimension.x/2);
             this.renderer.addMesh("2DWorkpiece",this.machine.mesh2D);
             this.renderer.addMesh("3DWorkpiece",this.machine.mesh3D);
         }
@@ -395,7 +396,7 @@ CWS.Controller.prototype.windowResize = function()
         this.renderer.controls.handleResize();
         this.renderer.setSize(maincanvasdiv.offsetWidth,
                               maincanvasdiv.offsetHeight);
-        requestAnimationFrame(this.render.bind(this));
+        setTimeout(this.render.bind(this), 50);
     };
 
 CWS.Controller.prototype.render = function(forceUpdate)
