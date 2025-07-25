@@ -261,23 +261,44 @@ CWS.Renderer.prototype.removeMesh = function (meshName)
 
 CWS.Renderer.prototype.render = function ()
     {
-        if (this['2DWorkpiece'] && this['2DWorkpiece'].animation)
-        {
-            this['2DWorkpiece'].animation.next()
+        const doAnim = (workpiece) => {
+            if (workpiece && workpiece.animation &&
+                workpiece.animation.next
+            )
+                workpiece.animation.next();
         }
-        if (this['3DWorkpiece'] && this['3DWorkpiece'].animation)
-        {
-            this['3DWorkpiece'].animation.next();
-        }
+
+        doAnim(this['2DWorkpiece']);
+        doAnim(this['3DWorkpiece']);
 
         this.controls.update();
         this.renderer.render( this.scene, this.camera );
     };
 
-CWS.Renderer.prototype.animate = function (b,meshName)
+CWS.Renderer.prototype.animate = function (meshName)
     {
         if (this[meshName] && this[meshName].animation)
-            this[meshName].animation.touggleAnimation();
+		{
+			this._runningAnim.push({
+				cb:this.controls.update.bind(this),
+				anim: this[meshName].animation});
+			this[meshName].animation.toggleAnimation(this);
+		}
+
+		// contiue each frame until animations are done
+		let cnt = 0;
+		const eachFrm = (time)=>{
+			if (this._animationFrame === time) return; // already done this frame
+			for (const o of this._runningAnim)
+			 { o.anim.next(this); o.cb() }
+			this._animationFrame = time;
+			if (this._runningAnim.length) {
+				requestAnimationFrame(eachFrm);
+				if (cnt++ % 10 == 0)
+					this.renderer.render(this.scene, this.camera);
+			}
+		}
+		requestAnimationFrame(eachFrm);
     };
 
 CWS.Renderer.prototype.animateFinished = function(anim)

@@ -524,8 +524,8 @@ CWS.Controller.prototype.updateWireframe = function()
 
 CWS.Controller.prototype.runAnimation = function(animate)
     {
-        this.renderer.animate("2DWorkpiece", ()=>this.controls.update());
-        this.renderer.animate("3DWorkpiece", ()=>this.controls.update());
+        this.renderer.animate("2DWorkpiece");
+        this.renderer.animate("3DWorkpiece");
     };
 
 CWS.Controller.prototype.displayMessage = function(message,error)

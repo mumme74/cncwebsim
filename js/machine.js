@@ -161,39 +161,38 @@ CWS.Machine.prototype.create2DWorkpiece = function ()
             dataSize: 2,
             step:1,
             animationState: false,
-            touggleAnimation: function ()
-            {
-                this.animationState = !this.animationState;
-                this.end = 0;
-                this.animate(this.animationState);
-            },
-            animate: function (b)
-            {
-                if (b===true)
-                {
-                    this.next = function ()
-                    {
-                        if (this.end>this.size)
-                        {
-                            this.animationState = false;
-                            return false;
-                        }
-                        this.end += this.step*this.dataSize;
-                        while (geometry.attributes.vcolor.array[this.end]>=2)
-                        {
-                            this.end += 2;
-                        }
-                        geometry.setDrawRange(this.beg,this.end);
-                        return true;
-                    }
-                }
-                else
-                {
-                    this.next = function(){return false;};
-                    geometry.setDrawRange(0,Infinity);
-                }
-            },
-            next: function(){return false;},
+        	toggleAnimation: function (renderer) {
+            	this.animationState = !this.animationState;
+				if (this.animationState)
+				{
+        			this.end = 0;
+					this.next = this._next;
+        			this.next(renderer);
+				} else
+					this.stopAnimation();
+        	},
+			_next: function (renderer)
+			{
+				if (this.end>this.size)
+				{
+					this.stopAnimation(renderer);
+					return;
+				}
+
+				this.end += this.step*this.dataSize;
+				while (geometry.attributes.vcolor.array[this.end]>=2)
+				{
+					this.end += 2;
+				}
+				geometry.setDrawRange(this.beg,this.end);
+        	},
+			_nextDef: function(renderer) {},
+			stopAnimation: function(renderer) {
+				geometry.setDrawRange(0,Infinity);
+				this.animationState = false;
+				this.next = this._nextDef;
+				renderer.animateFinished.call(renderer, this);
+			}
         };
     };
 
