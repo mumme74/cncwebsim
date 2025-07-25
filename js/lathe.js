@@ -45,7 +45,9 @@ CWS.Lathe.prototype.initWebGL = function ()
         this.gl.enable(this.gl.DEPTH_TEST);
 
         // boilerplate for later calling the shader program
-        // aka delegate computaion to that. vs... calulates, fs fetches data
+        // aka delegate computation to that.
+        // vs-lathe-1-3D virtual-size sets distance in Z
+        // fs-lathe-1-3D full-size converted to 16bit by drawing colors 16bits.
         this.shaderProgram1 = this.createProgram(this.gl,
             CWS.SHADER["vs-lathe-1-3D"], CWS.SHADER["fs-lathe-1-3D"]);
 
@@ -60,7 +62,6 @@ CWS.Lathe.prototype.initWebGL = function ()
         this.setRendererResolution(this.renderResolution);
         this.gl.clearColor(1.0,1.0,1.0,1.0);
         this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT );
-
     }
 
 CWS.Lathe.prototype.updateWorkpieceDimensions = function ()

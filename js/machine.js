@@ -60,8 +60,8 @@ CWS.Machine.prototype.createProgram = function (gl, vertexShader, fragmentShader
     {
         function compile (shaderSource,type)
         {
-              var shader = gl.createShader(gl[type]);
-              gl.shaderSource(shader, shaderSource);
+            var shader = gl.createShader(gl[type]);
+            gl.shaderSource(shader, shaderSource);
             gl.compileShader(shader);
             if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
             {
