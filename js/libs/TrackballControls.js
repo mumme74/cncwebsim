@@ -114,6 +114,18 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	};
 
+	this.getState = function () {
+
+		return _state;
+
+	}
+
+	this.setState = function (state) {
+
+		_state = state;
+
+	}
+
 	var getMouseOnScreen = ( function () {
 
 		var vector = new THREE.Vector2();

@@ -9,6 +9,8 @@ CWS.Controller = function (editor,storage,renderer,motion)
         this.editor = editor;
         this.renderer = renderer;
         this.motion = motion;
+        this.panZoomRotate = new PanZoomSelector(this);
+
         this.saveFlag = 0;
 
         // ide settings

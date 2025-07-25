@@ -357,3 +357,37 @@ nav > ul > li > div:hover > span
 {
 	opacity: 1;
 }
+
+.panZoom
+{
+	position: absolute;
+	z-index: 50;
+	left: 20px;
+	bottom: 40px;
+	width: 90px;
+	height: 10px;
+	font-size: large;
+	font-weight: bold;
+}
+.panZoom > span
+{
+	cursor: hand;
+	color: #161616;
+	padding: 0.5rem;
+	margin-left: 0.5rem;
+	background-color: #707070;
+	color: #272822;
+	border-radius: 0.3rem;
+	opacity: 0.5;
+}
+.panZoom > span.selected
+{
+	opacity: 1.0;
+}
+.panZoom > span:hover,
+.panZoom > span.selected:hover
+{
+	opacity: 0.8;
+	background-color: #3a3939;
+	color: #999898;
+}

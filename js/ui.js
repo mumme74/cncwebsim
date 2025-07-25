@@ -84,6 +84,9 @@ CWS.UI = function (controller)
         {
             controller.runAnimation();
         });
+        this.settingsButton("#toggleGrid", "gridHelper", ()=>{
+            controller.storage.gridHelper=!controller.storage.gridHelper;
+        })
     }
 
 CWS.UI.prototype.constructor = CWS.UI;
@@ -124,13 +127,11 @@ CWS.UI.prototype.createStats = function (v)
 CWS.UI.prototype.settingsButton = function (node, prop, cb)
     {
         if (!cb) cb = function() {};
-        var _t = this;
-        node = $(node);
-        node.css('color', this.controller.storage[prop] ? "green" : "red");
-        node.click(function(event)
-        {
+        node = document.querySelector(node);
+        node.style.color = this.controller.storage[prop] ? "green" : "red";
+        node.addEventListener('click', (event) => {
             cb.call(node, event);
-            node.css('color', _t.controller.storage[prop] ? "green" : "red");
+            node.style.color = this.controller.storage[prop] ? "green" : "red";
         });
     };
 
