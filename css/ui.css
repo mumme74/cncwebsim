@@ -284,6 +284,26 @@ nav > ul > li > div:hover > span
     font-size: 15;
     content: "x";
 }
+.scrollable
+{
+	overflow: auto;
+}
+#dialogBox .documentation
+{
+	color: #fff;
+	height:600;
+}
+#dialogBox .documentation td
+{
+	color: #fff;
+	margin-bottom: 0.5rem;
+	vertical-align: text-top;
+}
+#dialogBox tr > td:first-child
+{
+	font-weight: bold;
+	color: #40c4db;
+}
 .debugBtns
 {
     color: #dfdbd2;

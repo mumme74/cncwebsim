@@ -43,6 +43,9 @@ CWS.UI = function (controller)
                         var d = new CWS.DialogBox(title);
                         d.tool(controller);
                         break;
+                    case "Documentation":
+                        var d = new CWS.DialogBox(title);
+                        d.documentationGcode(controller);
                     default:
                         break;
                 }
@@ -453,3 +456,32 @@ CWS.DialogBox.prototype.tool = function (controller)
               });
         }
     };
+
+CWS.DialogBox.prototype.documentationGcode = function (controller)
+    {
+        const rows = CWS.Interpreter.commands.map(row=>{
+            const desc = row.description
+                            .replaceAll('\n','<br>')
+                            .replaceAll(' ', '&nbsp;');
+            return `<tr><td>${row.name}</td><td>${desc}</td></tr>`
+        })
+        html = `
+        <div class="scrollable documentation">
+            <table>${rows.join('\n')}</table>
+        </div>`;
+        var dialog = this.dialog;
+        html = $(html);
+        this.dialog.append(html);
+        this.dialog.dialog(
+          {
+          width: 700,
+          buttons:
+            {
+                  "Cancel": function()
+                {
+                      $(this).dialog("close");
+                }
+            }
+          });
+
+    }
