@@ -341,8 +341,10 @@ CWS.Renderer.prototype.setGridHelper = function (on, inInches)
         }
 
         if (on) {
-            const normalPlane = this.controller.machine.normalPlane;
-            this.gridHelper = new UnitGrid(inInches, 500, normalPlane !== 'XY');
+            const normalPlane = this.controller.machine.normalPlane,
+                  workpiece   = this.controller.machine.workpiece,
+                  size = Math.max(500, workpiece.x, workpiece.y);
+            this.gridHelper = new UnitGrid(inInches, size, normalPlane !== 'XY');
             this.scene.add(this.gridHelper);
         }
     }

@@ -53,7 +53,7 @@ CWS.Controller = function (editor,storage,renderer,motion)
         // Init the editor
         this.editor.subscribeToCodeChanged((code,ev) => {
             this.save();
-            this.runInterpreter();
+            this.interpreterRun();
         });
 
         // Add the renderer to the container
@@ -446,7 +446,7 @@ CWS.Controller.prototype.interpreterRun = function(forceRun)
             this._initInterpreter();
             this.displayMessage("Running G Code");
             this.motion.run();
-        }, forceRun ? 3000 : 0);
+        }, forceRun ? 300 : 0);
     };
 
 CWS.Controller.prototype.interpreterContinue = function()
@@ -498,8 +498,8 @@ CWS.Controller.prototype.updateWorkpieceDraw = function()
         {
             this.displayMessage();
             this.editor.editor.getSession().setAnnotations([]);
-            this.render();
         }
+        this.render();
     };
 
 CWS.Controller.prototype.update2D = function()

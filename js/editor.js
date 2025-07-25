@@ -43,6 +43,13 @@ CWS.CodeEditor = function ()
 			e.stop();
 		});
 
+		this.editor.on("change", (e)=>
+		{
+			if (e.isLarge)
+				return;
+			this.codeChanged(e);
+		});
+
 		$(document).ready(()=>{
 			this.setupCompleter();
 		});
@@ -184,7 +191,7 @@ class TokenTooltip extends Tooltip {
 		}
 
 		const variableHandler = (caption)=>{
-			const state = this.editor.controller.motion.state;
+			const state = this.editor.controller?.motion.state;
 			if (state === "halted") {
 				this.editor.controller.motion.getVariableVlu(
 					token.value, onRecvVlu)
