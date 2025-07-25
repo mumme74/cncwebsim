@@ -35,7 +35,7 @@ CWS.Machine = function (options)
             fragmentShader: CWS.SHADER["fs-2D"],
             linewidth: 1,
         });
-		this.normalPlane = "XY";
+        this.normalPlane = "XY";
     }
 
 CWS.Machine.prototype.constructor = CWS.Machine;
@@ -49,32 +49,32 @@ CWS.Machine.prototype.setMotion = function (motionData)
 
 // Incrementally add data to already set motion Data
 CWS.Machine.prototype.updateMotion = function (motionData)
-	{
-		const oldSizePos = this.motionData.positions.length,
-			  updateSize = motionData.positions.length,
-			  newSizePos = oldSizePos + updateSize;
+    {
+        const oldSizePos = this.motionData.positions.length,
+              updateSize = motionData.positions.length,
+              newSizePos = oldSizePos + updateSize;
 
-		this.motionData.positions = new Float32Array(
-			this.motionData.positions.buffer.transfer(newSizePos*4))
-		for (let i = oldSizePos, j = 0;  i < newSizePos; ++i, ++j)
-			this.motionData.positions[i] = motionData.positions[j];
+        this.motionData.positions = new Float32Array(
+            this.motionData.positions.buffer.transfer(newSizePos*4))
+        for (let i = oldSizePos, j = 0;  i < newSizePos; ++i, ++j)
+            this.motionData.positions[i] = motionData.positions[j];
 
-		const oldSizeCol = this.motionData.color.length,
-		      updateColSz = motionData.color.length,
-			  newColorSz  = updateColSz + oldSizeCol;
-		this.motionData.color = new Float32Array(
-			this.motionData.color.buffer.transfer(newSizePos*4))
-		for (let i = oldSizeCol, j = 0; i < newColorSz; ++i, ++j)
-			this.motionData.color[i] = motionData.color[j];
+        const oldSizeCol = this.motionData.color.length,
+              updateColSz = motionData.color.length,
+              newColorSz  = updateColSz + oldSizeCol;
+        this.motionData.color = new Float32Array(
+            this.motionData.color.buffer.transfer(newSizePos*4))
+        for (let i = oldSizeCol, j = 0; i < newColorSz; ++i, ++j)
+            this.motionData.color[i] = motionData.color[j];
 
-		this.meshes.mesh2D = false;
-		this.meshes.mesh3D = false;
-	};
+        this.meshes.mesh2D = false;
+        this.meshes.mesh3D = false;
+    };
 
 CWS.Machine.prototype.create2DWorkpiece = function ()
-	{
-		throw new Error( "call to abstract method" );
-	};
+    {
+        throw new Error( "call to abstract method" );
+    };
 CWS.Machine.prototype.create2DWorkpiece = function ()
     {
         throw new Error( "call to abstract method" );
@@ -167,38 +167,38 @@ CWS.Machine.prototype.create2DWorkpiece = function ()
             dataSize: 2,
             step:1,
             animationState: false,
-        	toggleAnimation: function (renderer) {
-            	this.animationState = !this.animationState;
-				if (this.animationState)
-				{
-        			this.end = 0;
-					this.next = this._next;
-        			this.next(renderer);
-				} else
-					this.stopAnimation(renderer);
-        	},
-			_next: function (renderer)
-			{
-				if (this.end>this.size)
-				{
-					this.stopAnimation(renderer);
-					return;
-				}
+            toggleAnimation: function (renderer) {
+                this.animationState = !this.animationState;
+                if (this.animationState)
+                {
+                    this.end = 0;
+                    this.next = this._next;
+                    this.next(renderer);
+                } else
+                    this.stopAnimation(renderer);
+            },
+            _next: function (renderer)
+            {
+                if (this.end>this.size)
+                {
+                    this.stopAnimation(renderer);
+                    return;
+                }
 
-				this.end += this.step*this.dataSize;
-				while (geometry.attributes.vcolor.array[this.end]>=2)
-				{
-					this.end += 2;
-				}
-				geometry.setDrawRange(this.beg,this.end);
-        	},
-			_nextDef: function(renderer) {},
-			stopAnimation: function(renderer) {
-				geometry.setDrawRange(0,Infinity);
-				this.animationState = false;
-				this.next = this._nextDef;
-				renderer.animateFinished.call(renderer, this);
-			}
+                this.end += this.step*this.dataSize;
+                while (geometry.attributes.vcolor.array[this.end]>=2)
+                {
+                    this.end += 2;
+                }
+                geometry.setDrawRange(this.beg,this.end);
+            },
+            _nextDef: function(renderer) {},
+            stopAnimation: function(renderer) {
+                geometry.setDrawRange(0,Infinity);
+                this.animationState = false;
+                this.next = this._nextDef;
+                renderer.animateFinished.call(renderer, this);
+            }
         };
     };
 
