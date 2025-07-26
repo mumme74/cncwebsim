@@ -145,9 +145,12 @@ CWS.Storage.prototype.storageCheckKeys = function ()
         }
 
         data = this.getData("currentProjectHeader");
-        this.currentProjectHeaderCache = data;
-        if (data.name!==undefined)
+        if (!data.name || !data.machine?.mtype)
+            this.isFirstRun = true; // first time or something got messed up.
+        else {
+            this.currentProjectHeaderCache = data;
             this.projectsNameCache[data.name] = data.machine.mtype;
+        }
     };
 
 CWS.Storage.prototype.getData = function (key, defaultVlu)
@@ -255,16 +258,17 @@ CWS.Storage.prototype.saveProjects = function (projects)
 // Create a new project.
 // If the project already exists and unique name will be created.
 // Set saveCurrent to true to make sure the current opened project will be saved.
-CWS.Storage.prototype.createNewProject = function (projectName,machine,saveCurrent)
-    {
+CWS.Storage.prototype.createNewProject = function (
+        projectName, machine, workpiece, saveCurrent
+    ) {
         if (saveCurrent==true)
             this.saveCurrentProjectToProjectsList();
-        var project = CWS.Project.createDefaultProject(machine);
+        var project = CWS.Project.createDefaultProject(machine, workpiece);
         project.header.name = this.getUniqueProjectName(projectName);
         this.saveCurrentProjectCode(project.code);
         this.saveCurrentProjectHeader(project.header);
         this.projectsNameCache[project.header.name]=project.header.machine.mtype;
-        return project.projectName;
+        return project.header.name;
     };
 
 CWS.Storage.prototype.loadProject = function (projectName,saveCurrent)
@@ -283,9 +287,11 @@ CWS.Storage.prototype.saveCurrentProjectToProjectsList = function ()
     {
         var currentProject = {};
         currentProject.header = this.getData("currentProjectHeader");
-        if (currentProject.header.name===undefined)
+        if (!currentProject.header.name || !currentProject.header?.mtype)
             return;
         currentProject.code = this.getData("currentProjectCode");
+        if (!currentProject.code)
+            return;
         var projects = this.getData("projects");
         projects[currentProject.header.name] = currentProject;
         this.saveProjects(projects);

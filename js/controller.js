@@ -135,7 +135,11 @@ CWS.Controller.prototype.createProject = function(data)
     {
         if (data['projectName']=="" || data['projectName']===undefined)
              return;
-        var projectName = this.storage.createNewProject(data['projectName'],data['machineType'],true);
+
+        var projectName = this.storage.createNewProject(
+                data['projectName'], data['machineType'],
+                data['workpiece'], true);
+
         this.openProject(projectName);
         return projectName;
     };
@@ -293,7 +297,17 @@ CWS.Controller.prototype.exportProject = function()
     {
         const filename = this.storage.header.name + '.json',
               json = this.storage.currentProjectToJson();
-        this._makeDownload(json, filename);
+        this._createDownload(json, filename);
+    }
+
+CWS.Controller.prototype.exportToOBJ = function()
+    {
+        console.log("Exporting");
+        var filename = this.storage.header.name + ".stl";
+        // Problem with STL Exporter
+        var exporter = new THREE.STLBinaryExporter ();
+        var result = exporter.parse (this.renderer.scene);
+        this._createDownload(result, filename);
     }
 
 CWS.Controller.prototype.importFile = function(path, content)
@@ -319,17 +333,7 @@ CWS.Controller.prototype.importFile = function(path, content)
         }
     }
 
-CWS.Controller.prototype.exportToOBJ = function()
-    {
-        console.log("Exporting");
-        var filename = this.storage.header.name + ".stl";
-        // Problem with STL Exporter
-        var exporter = new THREE.STLBinaryExporter ();
-        var result = exporter.parse (this.renderer.scene);
-        this._makeDownload(result, filename);
-    }
-
-CWS.Controller.prototype._makeDownload = function(data, filename)
+CWS.Controller.prototype._createDownload = function(data, filename)
     {
         var element = document.createElement('a');
         var blob = new Blob([data], {type: 'text/plain'});
@@ -597,3 +601,71 @@ CWS.Controller.prototype.displayMessage = function(message,error)
         else
             $("#messages").css('color','black').text(message);
     };
+
+CWS.Controller.prototype._allDemos = [];
+
+CWS.Controller.prototype._fetch = async function (url) {
+    try {
+        const req = await fetch(url);
+        if (!req || (req.status !== 200 && req.status !== 304))
+            throw "fail download";
+
+        return await req.text();
+    } catch(e) {
+        return "";
+    }
+}
+
+CWS.Controller.prototype._fetchAsJson = async function(url)
+    {
+       const text = await this._fetch(url)
+        if (!text)
+            return [];
+
+        return JSON.parse(text);
+    }
+
+CWS.Controller.prototype.demos = async function()
+    {
+        if (this._allDemos.length)
+            return [...this._allDemos];
+
+        const json = await this._fetchAsJson("gcode/index.json");
+        if (!json) return [];
+
+        this._allDemos = json.demos;
+
+        return this.    _allDemos;
+    }
+
+CWS.Controller.prototype.demoNames = async function()
+    {
+        return (await this.demos()).map(d=>d.name.replace(/(.*)\..*$/, "$1"));
+    }
+
+CWS.Controller.prototype.showDemo = async function(name)
+    {
+        const demoIdx = this._allDemos.findIndex(d=>
+            d.name.replace(/(.*)\..*$/, "$1")===name);
+        if (demoIdx === -1)
+            return;
+
+        const showDemo = (demo)=>{
+            this.createProject({
+                projectName:"Untitled", machineType: demo.mtype,
+                workpiece: demo.workpiece
+            });
+            this.editor.setCode(demo.code);
+        }
+
+        if (this._allDemos[demoIdx].code)
+            return showDemo(this._allDemos[demoIdx]);
+
+        const code = await this._fetch(`gcode/${this._allDemos[demoIdx].name}`)
+        if (!code)
+            return;
+
+        this._allDemos[demoIdx].code = code;
+
+        showDemo(this._allDemos[demoIdx]);
+    }

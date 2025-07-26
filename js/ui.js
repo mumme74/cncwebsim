@@ -96,6 +96,10 @@ CWS.UI.prototype.handleTopMenu = function(ev)
             var d = new CWS.DialogBox(title);
             d.deleteProject(this.controller);
             break;
+        case "Demo File":
+            var d = new CWS.DialogBox(title);
+            d.showDemos(this.controller);
+            break;
         case "Workpiece dimensions":
             var d = new CWS.DialogBox(title);
             d.workpieceDimensions(this.controller);
@@ -218,7 +222,8 @@ CWS.DialogBox.prototype.newProject = function (controller)
 
 CWS.DialogBox.prototype.openProject = function (controller)
     {
-        this.projectDialos(controller, (projectName)=>{
+        const fileList = Object.keys(controller.listProjects());
+        this.projectDialogs(fileList, controller, (projectName)=>{
             controller.openProject(projectName);
         });
     }
@@ -226,15 +231,23 @@ CWS.DialogBox.prototype.openProject = function (controller)
 
 CWS.DialogBox.prototype.deleteProject = function (controller)
     {
-        this.projectDialos(controller, (projectName)=>{
+        const fileList = Object.keys(controller.listProjects());
+        this.projectDialogs(fileList, controller, (projectName)=>{
             controller.deleteProject(projectName);
         });
     }
 
-CWS.DialogBox.prototype.projectDialos = function (controller, callback)
+CWS.DialogBox.prototype.showDemos = async function (controller)
+    {
+        const nameList = await controller.demoNames();
+        this.projectDialogs(nameList, controller, (demoName)=>{
+            controller.showDemo(demoName);
+        });
+    }
+
+CWS.DialogBox.prototype.projectDialogs = function (fileList, controller, callback)
     {
         html = '<ul class="tableList">';
-        var fileList = Object.keys(controller.listProjects());
         for (var i = 0; i < fileList.length; i++)
         {
             html += '<li><span class="icon icon-file-text2"></span>'+fileList[i]+'</li>';

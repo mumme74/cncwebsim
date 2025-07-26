@@ -1,0 +1,14 @@
+{
+    "description":"Examples/Demos lookup through this index.",
+    "demos": [
+        {"name":"fresa.gcode", "mtype":"Mill",
+          "workpiece":{"material":"aluminium", "x":200, "y":250,"z":50}},
+        {"name":"fresa2.cnc", "mtype":"Mill"},
+        {"name":"lantern.gcode", "mtype":"Mill",
+          "workpiece":{"material":"sheetmetal","x":600,"y":500,"z":1.5}},
+        {"name":"Small EiffelTower.gcode", "mtype":"3D Printer"},
+        {"name":"stresstest_interpreter.gcode", "mtype":"Mill"},
+        {"name":"Tape dispenser.gcode", "mtype":"3D Printer"},
+        {"name":"torno.gcode", "mtype":"Lathe"}
+    ]
+}

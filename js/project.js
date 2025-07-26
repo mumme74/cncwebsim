@@ -82,7 +82,7 @@ CWS.Project.createDefaultCode = function (machine)
     {
         if (machine=="Lathe")
         {
-            return     "G18 ( Plane X,Z )\n"+
+            return  "G18 ( Plane X,Z )\n"+
                     "G21 ( Millimeter )\n"+
                     "G90 ( Absolute )\n"+
                     "G40 ( Cancel radius compensation )\n"+
@@ -90,7 +90,7 @@ CWS.Project.createDefaultCode = function (machine)
         }
         else if (machine=="Mill")
         {
-            return     "G17 ( Plane X,Y )\n"+
+            return  "G17 ( Plane X,Y )\n"+
                     "G21 ( Millimeter )\n"+
                     "G90 ( Absolute )\n"+
                     "G40 ( Cancel radius compensation )\n"+
@@ -98,7 +98,7 @@ CWS.Project.createDefaultCode = function (machine)
         }
         else if (machine=="3D Printer")
         {
-            return     "G17 ( Plane X,Y )\n"+
+            return  "G17 ( Plane X,Y )\n"+
                     "G21 ( Millimeter )\n"+
                     "G90 ( Absolute )\n"+
                     "G40 ( Cancel radius compensation )\n"+
@@ -108,12 +108,12 @@ CWS.Project.createDefaultCode = function (machine)
             console.error(machine+" Not available");
     }
 
-CWS.Project.createDefaultProject = function (machine)
+CWS.Project.createDefaultProject = function (machine, workpiece)
     {
         var project = {};
         project.header = {};
         project.header.date = new Date();
-        project.header.workpiece = this.createDefaultWorkpiece(machine);
+        project.header.workpiece = workpiece || this.createDefaultWorkpiece(machine);
         project.header.machine = this.createDefaultMachine(machine);
         project.code = this.createDefaultCode(machine);
         return project;
