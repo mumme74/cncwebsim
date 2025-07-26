@@ -121,6 +121,17 @@ CWS.UI.prototype.handleTopMenu = function(ev)
         case "Documentation":
             var d = new CWS.DialogBox(title);
             d.documentationGcode(this.controller);
+        case "License":
+            const a = document.createElement("a");
+            a.setAttribute("href", "https://opensource.org/license/mit");
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            break;
+        case "About":
+            var d = new CWS.DialogBox(title);
+            d.about();
         default:
             break;
         }
@@ -495,6 +506,37 @@ CWS.DialogBox.prototype.tool = function (controller)
         }
     };
 
+CWS.DialogBox.prototype.about = function ()
+    {
+        html = `
+        <div class="scrollable">
+            <p>This webapp was created by
+            <a href="https://filipecaixeta.com.br/" style="color:blue:">Filipe Caixeta</a> back in 2016. <br>
+            It contained many features from the start, hovever it lacked in some regards.
+            Containing some bugs and lacked a more advanced G-Code interpreter.</p>
+            <p>It was pickup by
+            <a href="https://github.com/mumme74/cncwebsim/tree/improvements" style="color:blue:">
+                Fredrik Johansson
+            in 2025 as a preparation for a course in programming I am going to
+            teach in the autumn, where the attandants are beginner students for
+            industrial production.</p>
+            <p>
+            I figured this simulator could be a good way to learn G-code.<br>
+            They only have chromebooks so it need to be webbased.
+            </p>
+        </div>`;
+        html = $(html);
+        this.dialog.append(html);
+        this.dialog.dialog({
+          width: 700,
+          buttons: {
+                "Cancel": () => {
+                      $(this).dialog("close");
+                }
+            }
+        });
+    }
+
 CWS.DialogBox.prototype.documentationGcode = function (controller)
     {
         const rows = CWS.Interpreter.commands.map(row=>{
@@ -514,8 +556,7 @@ CWS.DialogBox.prototype.documentationGcode = function (controller)
           width: 700,
           buttons:
             {
-                  "Cancel": function()
-                {
+                  "Cancel": () => {
                       $(this).dialog("close");
                 }
             }
@@ -545,8 +586,7 @@ CWS.DialogBox.prototype.importFile = function (controller)
                     reader.readAsText(node.files[0]);
                     dialog.dialog("close");
                 },
-                "Cancel": function()
-                {
+                "Cancel": () => {
                       $(this).dialog("close");
                 }
             }
