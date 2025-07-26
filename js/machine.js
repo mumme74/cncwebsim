@@ -145,7 +145,7 @@ CWS.Machine.prototype.create2DWorkpiece = function ()
             this.mesh2D.position.y = -this.workpiece.y/2 || 0;
             this.mesh2D.position.z = -this.workpiece.z/2 || 0;
         }
-        if (this.meshes.mesh2D === true)
+        if (this.meshes.mesh2D === true || !this.motionData)
             return;
 
         var geometry = this.mesh2D.geometry;
@@ -154,8 +154,10 @@ CWS.Machine.prototype.create2DWorkpiece = function ()
         // I don't want to create a new mesh every time. Adding again the
         // position and vcolor will replace the buffer. I'm not that sure
         // if I'm doing something that could break the code later.
-        geometry.addAttribute( 'position', new THREE.BufferAttribute( this.motionData.positions ,3));
-        geometry.addAttribute( 'vcolor', new THREE.BufferAttribute( this.motionData.color ,1 ));
+        geometry.addAttribute( 'position',
+            new THREE.BufferAttribute( this.motionData.positions ,3));
+        geometry.addAttribute( 'vcolor',
+            new THREE.BufferAttribute( this.motionData.color ,1 ));
         geometry.setDrawRange(0,Infinity);
         this.mesh2D.visible = true;
         this.meshes.mesh2D = true;
@@ -206,7 +208,7 @@ CWS.Machine.prototype.create3DWorkpiece = function ()
     {
         this.mesh3D.visible = true;
 
-        if (this.meshes.mesh3D === true)
+        if (this.meshes.mesh3D === true || !this.motionData)
             return;
 
         this._create3DWorkpiece();

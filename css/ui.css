@@ -108,6 +108,13 @@ nav > ul > li > div > .icon
 	display:block;
 	line-height:45px;
 }
+#topMenu #projectName
+{
+	color: #d3d3d3;
+	position: absolute;
+	top: 15px;
+	left: 400px;
+}
 a
 {
 	text-decoration: none;

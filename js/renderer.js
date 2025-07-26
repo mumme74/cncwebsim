@@ -104,18 +104,6 @@ CWS.Renderer = function (id,options)
         this.camera.lookAt( this.scene.position );
     }
 
-CWS.Renderer.prototype =
-    {
-        get domElement()
-        {
-            return this.renderer.domElement;
-        },
-        set domElement(val)
-        {
-            this.renderer.domElement = val;
-        },
-    };
-
 CWS.Renderer.prototype.constructor = CWS.Renderer;
 
 CWS.Renderer.prototype.setController = function (controller)

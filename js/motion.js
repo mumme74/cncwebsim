@@ -20,7 +20,19 @@ CWS.Motion = function ()
         this.state       = CWS.MotionStates.Idle;
         this.inflight    = false;
         this.atLine      = -1;
+
+        // Possible events are:
+        //   run
+        //   idle
+        //   startDebug
+        //   endDebug
+        //   halted
+        CWS.Events.call(this);
     };
+
+
+//   startDebug
+//   endDebug
 
 CWS.Motion.prototype.constructor = CWS.Motion;
 
@@ -31,6 +43,7 @@ CWS.Motion.prototype.run = function ()
         if (this.state === CWS.MotionStates.Idle)
         {
             this.postMessage(CWS.MotionStates.Running);
+            this._emitEvent('run');
         }
     };
 
@@ -40,6 +53,7 @@ CWS.Motion.prototype.contin = function ()
             this.state === CWS.MotionStates.Halted)
         {
             this.postMessage(CWS.MotionStates.Continue);
+            this._emitEvent('startDebug')
         }
     }
 
@@ -66,6 +80,8 @@ CWS.Motion.prototype.stop = function()
         this.state = CWS.MotionStates.Idle;
         this.inflight = false;
         this.data = null;
+
+        this._emitEvent('idle');
     }
 
 CWS.Motion.prototype.setData = function (data)
@@ -102,6 +118,7 @@ CWS.Motion.prototype.postMessage = function (state, extra)
 CWS.Motion.prototype.setController = function (controller)
     {
         this.controller = controller;
+
         this.worker.onmessage = (e) => {
             if (e.data.error?.length!=0)
                 console.log(e.data.error);
@@ -116,8 +133,17 @@ CWS.Motion.prototype.setController = function (controller)
             }
 
             if (e.data.state) {
-                this.state = e.data.state;
-                this.atLine   = e.data.atLine;
+                const prevState = this.state;
+                this.state  = e.data.state;
+                this.atLine = e.data.atLine;
+
+                if (this.state === CWS.MotionStates.Halted)
+                    this._emitEvent("halted");
+                else {
+                    if (prevState > CWS.MotionStates.Running)
+                        this._emitEvent("stopDebug");
+                    this._emitEvent("idle");
+                }
 
                 if (e.data.positions.length) // might be a debug cmd
                     this.controller.updateWorkpieceDraw();

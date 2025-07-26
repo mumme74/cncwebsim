@@ -13,6 +13,17 @@ CWS.Controller = function (editor,storage,renderer,motion)
 
         this.saveFlag = 0;
 
+        // Possible events are:
+        //   create
+        //   open
+        //   close
+        //   delete
+        //   save
+        //   machineChange
+        //   toolchange
+        //   workpiece
+        CWS.Events.call(this); // inherit events class
+
         const update = ()=>{
             const onUpdate = ()=>{
                 this.render();
@@ -55,9 +66,7 @@ CWS.Controller = function (editor,storage,renderer,motion)
             this.interpreterRun();
         });
 
-        // Add the renderer to the container
-        var cont = document.getElementById("canvasContainer");
-        cont.appendChild(renderer.domElement);
+        const cont = this.renderer.renderer.domElement;
 
         // update view on mouse events
         this._btnDown = false;
@@ -141,6 +150,7 @@ CWS.Controller.prototype.createProject = function(data)
                 data['workpiece'], true);
 
         this.openProject(projectName);
+        this._emitEvent('create', projectName);
         return projectName;
     };
 
@@ -162,6 +172,9 @@ CWS.Controller.prototype.openProject = function(projectName)
             }
         this.loadMachine();
         this.editor.setCode(this.storage.code);
+
+        this._emitEvent('open', projectName);
+
         if (this.storage.autoRun)
             this.interpreterRun();
         this.renderer.setController(this); // reset grid plane
@@ -171,6 +184,9 @@ CWS.Controller.prototype.deleteProject = function(projectName)
     {
         const machineType = this.machine.mtype;
         this.storage.deleteProject(projectName);
+
+        this._emitEvent('delete', projectName);
+
         this.createProject({projectName:"Untitled", machineType});
     }
 
@@ -179,7 +195,6 @@ CWS.Controller.prototype.loadMachine = function()
         this.renderer.controls.reset();
         if (this.storage.machineType=="Lathe")
         {
-            document.getElementById('machineIcon').className = "icon-lathe";
             this.machine = new CWS.Lathe({
                 machine: this.storage.machine,
                 material3D: this.material3D,
@@ -191,7 +206,6 @@ CWS.Controller.prototype.loadMachine = function()
         }
         else if (this.storage.machineType=="Mill")
         {
-            document.getElementById('machineIcon').className = "icon-mill";
             this.machine = new CWS.Mill({
                 machine: this.storage.machine,
                 material3D: this.material3D,
@@ -204,7 +218,6 @@ CWS.Controller.prototype.loadMachine = function()
         }
         else if (this.storage.machineType=="3D Printer")
         {
-            document.getElementById('machineIcon').className = "icon-printer";
             this.machine = new CWS.Printer({
                 machine: this.storage.machine,
                 material3D: this.material3D,
@@ -225,6 +238,8 @@ CWS.Controller.prototype.loadMachine = function()
         });
         this.renderer.setController(this); // reset grid plane
         this.updateWireframe();
+
+        this._emitEvent('machineChange', this.storage.machineType)
     };
 
 CWS.Controller.prototype.openMachine = function(machine)
@@ -232,11 +247,6 @@ CWS.Controller.prototype.openMachine = function(machine)
         this.storage.machine = CWS.Project.createDefaultMachine(machine);
         this.storage.workpiece = CWS.Project.createDefaultWorkpiece(machine);
         this.loadMachine();
-        // finally render it.
-        requestAnimationFrame(()=>{
-            if (this.storage.autoRun)
-                this.interpreterRun();
-        });
     };
 
 CWS.Controller.prototype.workpieceDimensions = function(dimensions)
@@ -260,6 +270,7 @@ CWS.Controller.prototype.setMachineTool = function(tool)
         this.storage.machine.tool.angle = parseFloat(tool['toolangle']);
         this.machine.updateTool();
         this.updateWorkpieceDraw();
+        this._emitEvent('toolchange', tool);
     };
 
 CWS.Controller.prototype.getWorkpiece = function()
@@ -291,6 +302,8 @@ CWS.Controller.prototype.setWorkpieceDimensions = function(dimensions)
         }
 
         this.updateWireframe();
+
+        this._emitEvent('workpiece', workpiece);
     };
 
 CWS.Controller.prototype.exportProject = function()
@@ -467,9 +480,9 @@ CWS.Controller.prototype.save = function(forceSave)
             this.saveFlag=0;
             // wait 3s before autosave, let us breathe a little...
             clearTimeout(CWS.Controller._savetimer);
-            var _this = this;
-            CWS.Controller._savetimer = setTimeout(function(){
-                _this.storage.code = _this.editor.getCode();
+            CWS.Controller._savetimer = setTimeout(() => {
+                this.storage.code = this.editor.getCode();
+                this._emitEvent('save');
             }, forceSave ? 3000 : 0);
         }
     };

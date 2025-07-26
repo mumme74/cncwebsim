@@ -9,6 +9,9 @@ CWS.UI = function (controller)
         this.controller = controller;
         window.addEventListener('resize',this.resize.bind(this));
 
+        this._setupControllerEvents(controller);
+        this._setupMotionEvents(controller);
+
         var topMenu = $("#topMenu");
         $("#topMenu>nav > ul > li").each(function(i){$(this)
             .mouseenter(function(){topMenu.css('height','90px');})
@@ -65,7 +68,7 @@ CWS.UI = function (controller)
         $("#continueIcon").click(function () {
             controller.interpreterContinue();
         });
-        $("#stepOverIcon").click(function () {
+        $("#stepOutIcon").click(function () {
             controller.interpreterStepOut();
         });
         $("#nextIcon").click(function () {
@@ -136,6 +139,61 @@ CWS.UI.prototype.handleTopMenu = function(ev)
         default:
             break;
         }
+    }
+
+CWS.UI.prototype._setupControllerEvents = function(controller)
+    {
+        // controller events
+        const setProjectName = (name)=>{
+            document.querySelector("#projectName").innerText =
+                `project: ${name || ""}`;
+        }
+        controller.addEventListener("create", setProjectName);
+        controller.addEventListener("open", setProjectName);
+
+        const setMachineChange = (machine)=>{
+            const tbl = {
+                "Mill":"icon-mill",
+                "Lathe":"icon-lathe",
+                "3D Printer":"icon-printer"
+            };
+            const mNode = document.querySelector("#machineIcon");
+            for (const [mch, icon] of Object.entries(tbl))
+                mNode.classList[mch === machine ? "add" : "remove"](icon);
+        }
+        controller.addEventListener("machineChange", setMachineChange);
+
+        // incase they already fired
+        setProjectName(controller.storage.currentProjectHeaderCache?.name);
+        setMachineChange(controller.storage.machineType);
+    }
+
+CWS.UI.prototype._setupMotionEvents = function (controller)
+    {
+        const runIcon     = document.querySelector("#runIcon"),
+              stopIcon    = document.querySelector("#stopIcon"),
+              contIcon    = document.querySelector("#continueIcon"),
+              stepOutIcon = document.querySelector("#stepOutIcon"),
+              nextIcon    = document.querySelector("#nextIcon");
+
+        controller.motion.addEventListener("run", ()=>{
+            runIcon.style.color = "red";
+        });
+        controller.motion.addEventListener("idle", ()=>{
+            runIcon.style.color = "";
+        });
+
+        controller.motion.addEventListener("halted", ()=>{
+            nextIcon.style.color    = "green";
+            stepOutIcon.style.color = "green";
+            contIcon.style.color    = "green";
+        });
+
+        controller.motion.addEventListener("idle", ()=>{
+            nextIcon.style.color    = "";
+            stepOutIcon.style.color = "";
+            contIcon.style.color    = "";
+        })
     }
 
 CWS.UI.prototype.resize = function()
