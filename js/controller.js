@@ -172,7 +172,7 @@ CWS.Controller.prototype.openProject = function(projectName)
                 this.storage.machine = machine;
             }
         this.loadMachine();
-        this.editor.setCode(this.storage.code);
+        this.editor.setCode(this.storage.code || "");
 
         this._emitEvent('open', projectName);
 
@@ -183,7 +183,7 @@ CWS.Controller.prototype.openProject = function(projectName)
 
 CWS.Controller.prototype.renameProject = function(name)
     {
-        if (this.storage.renameCurrentProject(name))
+        if (!this.storage.renameCurrentProject(name, this.editor.getCode()))
             return false;
 
         this._emitEvent('rename', name);

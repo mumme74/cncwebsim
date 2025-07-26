@@ -357,7 +357,7 @@ CWS.Storage.prototype.getUniqueProjectName = function (projectName)
         return projectName;
     };
 
-CWS.Storage.prototype.renameCurrentProject = function (name)
+CWS.Storage.prototype.renameCurrentProject = function (name, code)
     {
         // update name and save it
         if (name in this.projectsNameCache)
@@ -377,16 +377,19 @@ CWS.Storage.prototype.renameCurrentProject = function (name)
         var projects = this.getData("projects");
         if (oldName in projects) {
             const oldPrj = projects[oldName];
-            oldPrj.name = name;
+            oldPrj.header.name = name;
+            oldPrj.code = code;
             delete projects[oldName];
             projects[name] = oldPrj;
         } else {
             projects[name] = {
                 header: this.currentProjectHeaderCache,
-                code:   this.currentProjectCode
+                code:   code
             };
         }
         this.saveProjects(projects);
+
+        return true;
     }
 
 CWS.Storage.prototype.reset = function ()
