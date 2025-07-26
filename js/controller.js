@@ -163,6 +163,13 @@ CWS.Controller.prototype.openProject = function(projectName)
         this.renderer.setController(this); // reset grid plane
     };
 
+CWS.Controller.prototype.deleteProject = function(projectName)
+    {
+        const machineType = this.machine.mtype;
+        this.storage.deleteProject(projectName);
+        this.createProject({projectName:"Untitled", machineType});
+    }
+
 CWS.Controller.prototype.loadMachine = function()
     {
         this.renderer.controls.reset();
@@ -282,17 +289,52 @@ CWS.Controller.prototype.setWorkpieceDimensions = function(dimensions)
         this.updateWireframe();
     };
 
+CWS.Controller.prototype.exportProject = function()
+    {
+        const filename = this.storage.header.name + '.json',
+              json = this.storage.currentProjectToJson();
+        this._makeDownload(json, filename);
+    }
+
+CWS.Controller.prototype.importFile = function(path, content)
+    {
+        let idx = path.lastIndexOf('/'), file = path;
+        if (idx === -1)
+            idx = path.lastIndexOf('\\');
+        if (idx !== -1)
+            file = path.substring(idx+1);
+        if (file.toLowerCase().endsWith('.json')) {
+            let name;
+            try {
+                const obj = JSON.parse(content);
+                name = this.storage.addProject(file, obj);
+                this.openProject(name);
+            } catch (e) {
+                this.displayMessage(e+"", true);
+            }
+        } else {
+            const machineType = this.machine.mtype;
+            this.createProject({projectName:"Untitled", machineType});
+            this.editor.setCode(content);
+        }
+    }
+
 CWS.Controller.prototype.exportToOBJ = function()
     {
         console.log("Exporting");
-        var filename = this.storage.header.name;
+        var filename = this.storage.header.name + ".stl";
         // Problem with STL Exporter
         var exporter = new THREE.STLBinaryExporter ();
         var result = exporter.parse (this.renderer.scene);
+        this._makeDownload(result, filename);
+    }
+
+CWS.Controller.prototype._makeDownload = function(data, filename)
+    {
         var element = document.createElement('a');
-        var blob = new Blob([result], {type: 'text/plain'});
+        var blob = new Blob([data], {type: 'text/plain'});
         element.setAttribute('href', URL.createObjectURL(blob));
-        element.setAttribute('download', filename+".stl");
+        element.setAttribute('download', filename);
 
         element.style.display = 'none';
         document.body.appendChild(element);

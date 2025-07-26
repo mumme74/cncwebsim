@@ -24,6 +24,7 @@ CWS.Storage = function (options)
             {name: "ideSettings", defVlu: {}},
             {name: "currentProjectHeader", defVlu: {}}
         ];
+        this.version = 0.1;
 
         this.storageAvailable();
 //         this.reset();
@@ -289,6 +290,43 @@ CWS.Storage.prototype.saveCurrentProjectToProjectsList = function ()
         projects[currentProject.header.name] = currentProject;
         this.saveProjects(projects);
     };
+
+CWS.Storage.prototype.currentProjectToJson= function ()
+    {
+        const currentProject = {
+            header: this.getData("currentProjectHeader"),
+            version: this.version,
+            code:   this.getData("currentProjectCode")
+        };
+        return JSON.stringify(currentProject, null, 2);
+    }
+
+CWS.Storage.prototype.addProject = function(filename, project)
+    {
+        if (filename.endsWith('.json'))
+            filename = filename.substring(0, filename.length-5);
+        else if (!filename)
+            filename = project.name;
+
+        if (!project.version || project.version > this.version)
+            throw "Wrong version";
+
+        const name = this.getUniqueProjectName(filename);
+        var projects = this.getData("projects");
+        projects[name] = project;
+        this.saveProjects(projects);
+
+        return name;
+    }
+
+CWS.Storage.prototype.deleteProject = function (projname)
+    {
+        if (projname in this.projectsNameCache) {
+            var projects = this.getData("projects");
+            delete projects[projname];
+            this.saveProjects(projects);
+        }
+    }
 
 CWS.Storage.prototype.getUniqueProjectName = function (projectName)
     {

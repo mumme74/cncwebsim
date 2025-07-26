@@ -14,42 +14,7 @@ CWS.UI = function (controller)
             .mouseenter(function(){topMenu.css('height','90px');})
             .mouseleave(function(){topMenu.css('height','45px');})
         });
-        topMenu.click(
-            function  (ev)
-            {
-                var title = ev.target.title
-                switch (title)
-                {
-                    case "New Project":
-                        var d = new CWS.DialogBox(title);
-                        d.newProject(controller);
-                        break;
-                    case "Open Project":
-                        var d = new CWS.DialogBox(title);
-                        d.openProject(controller);
-                        break;
-                    case "Open Machine":
-                        var d = new CWS.DialogBox(title);
-                        d.openMachine(controller);
-                        break;
-                    case "Workpiece dimensions":
-                        var d = new CWS.DialogBox(title);
-                        d.workpieceDimensions(controller);
-                        break;
-                    case "Export File":
-                        controller.exportToOBJ();
-                        break;
-                    case "Tool":
-                        var d = new CWS.DialogBox(title);
-                        d.tool(controller);
-                        break;
-                    case "Documentation":
-                        var d = new CWS.DialogBox(title);
-                        d.documentationGcode(controller);
-                    default:
-                        break;
-                }
-            });
+        topMenu.click(this.handleTopMenu.bind(this));
 
         this.elementEditor = $(document.getElementById("editor"));
         this.elementTopMenu = $(document.getElementById("topMenu"));
@@ -109,6 +74,53 @@ CWS.UI = function (controller)
     }
 
 CWS.UI.prototype.constructor = CWS.UI;
+
+CWS.UI.prototype.handleTopMenu = function(ev)
+    {
+        const title = ev.target.title
+        switch (title)
+        {
+        case "New Project":
+            var d = new CWS.DialogBox(title);
+            d.newProject(this.controller);
+            break;
+        case "Open Project":
+            var d = new CWS.DialogBox(title);
+            d.openProject(this.controller);
+            break;
+        case "Open Machine":
+            var d = new CWS.DialogBox(title);
+            d.openMachine(this.controller);
+            break;
+        case "Delete Project":
+            var d = new CWS.DialogBox(title);
+            d.deleteProject(this.controller);
+            break;
+        case "Workpiece dimensions":
+            var d = new CWS.DialogBox(title);
+            d.workpieceDimensions(this.controller);
+            break;
+        case "Export Project":
+            this.controller.exportProject();
+            break
+        case "Export STL":
+            this.controller.exportToOBJ();
+            break;
+        case "Import File":
+            var d = new CWS.DialogBox(title);
+            d.importFile(this.controller);
+            break;
+        case "Tool":
+            var d = new CWS.DialogBox(title);
+            d.tool(this.controller);
+            break;
+        case "Documentation":
+            var d = new CWS.DialogBox(title);
+            d.documentationGcode(this.controller);
+        default:
+            break;
+        }
+    }
 
 CWS.UI.prototype.resize = function()
     {
@@ -206,6 +218,21 @@ CWS.DialogBox.prototype.newProject = function (controller)
 
 CWS.DialogBox.prototype.openProject = function (controller)
     {
+        this.projectDialos(controller, (projectName)=>{
+            controller.openProject(projectName);
+        });
+    }
+
+
+CWS.DialogBox.prototype.deleteProject = function (controller)
+    {
+        this.projectDialos(controller, (projectName)=>{
+            controller.deleteProject(projectName);
+        });
+    }
+
+CWS.DialogBox.prototype.projectDialos = function (controller, callback)
+    {
         html = '<ul class="tableList">';
         var fileList = Object.keys(controller.listProjects());
         for (var i = 0; i < fileList.length; i++)
@@ -227,7 +254,7 @@ CWS.DialogBox.prototype.openProject = function (controller)
                 {
                     projectName = event.target.parentElement.textContent;
                 }
-                controller.openProject(projectName);
+                callback(projectName);
                 dialog.dialog("close");
             });
         this.dialog.append(html);
@@ -339,8 +366,7 @@ CWS.DialogBox.prototype.workpieceDimensions = function (controller)
           width: 400,
           buttons:
             {
-                "Save": function()
-                {
+                "Save": () => {
                     var values = {};
                     var result = $(this.firstChild).serializeArray();
                     for (var i = 0; i < result.length; i++)
@@ -350,8 +376,7 @@ CWS.DialogBox.prototype.workpieceDimensions = function (controller)
                       controller.setWorkpieceDimensions(values);
                       $(this).dialog("close");
                 },
-                  "Cancel": function()
-                {
+                  "Cancel": () => {
                       $(this).dialog("close");
                 }
             }
@@ -472,8 +497,7 @@ CWS.DialogBox.prototype.documentationGcode = function (controller)
         var dialog = this.dialog;
         html = $(html);
         this.dialog.append(html);
-        this.dialog.dialog(
-          {
+        this.dialog.dialog({
           width: 700,
           buttons:
             {
@@ -482,6 +506,36 @@ CWS.DialogBox.prototype.documentationGcode = function (controller)
                       $(this).dialog("close");
                 }
             }
-          });
+        });
+    }
 
+CWS.DialogBox.prototype.importFile = function (controller)
+    {
+        html = `
+        <label for="fileopen">Coohse a poject or gcode file</label>
+        <input type="file" id="fileopen" name="fileopen"
+               accept="application/json, text/x-gcode, text/x.gcode, .gcode" />
+        `;
+        var dialog = this.dialog;
+        html = $(html);
+        this.dialog.append(html);
+        this.dialog.dialog({
+          width: 400,
+          buttons:
+            {
+                "Ok": () => {
+                    const node = dialog[0].querySelector("#fileopen");
+                    const reader = new FileReader();
+                    reader.addEventListener('load', e=>{
+                        controller.importFile(node.value, e.target.result);
+                    });
+                    reader.readAsText(node.files[0]);
+                    dialog.dialog("close");
+                },
+                "Cancel": function()
+                {
+                      $(this).dialog("close");
+                }
+            }
+        });
     }
