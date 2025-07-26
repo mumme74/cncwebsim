@@ -1054,7 +1054,7 @@ CWS.Interpreter.prototype.commands = [
     {name: 'G1',  description: "Straight move:\nG0 x y z"},
     {name: 'G2',  description: "Move in an arc, clockwise:\nG2 x y r\nG2 x y i j k"},
     {name: 'G3',  description: "Move in an arc, counter clockwise:\nG3 x y r\nG3 x y i j k"},
-    {name: 'G4',  description: "Dwell, wait for a time:\nG4 s1.5; paus in 1.5s\G4 p200; paus in 200ms"},
+    {name: 'G4',  description: "Dwell, wait for a time:\nG4 s1.5; paus in 1.5s\nG4 p200; paus in 200ms"},
     {name: 'G10', description: "Move zero point:\nG10 L2 P1 x y z; workpiece\nG10 L20 P1; tool offset"},
     {name: 'G17', description: "Select XY plane for G2, G3"},
     {name: 'G18', description: "Select XZ plane for G2, G3"},
