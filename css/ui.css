@@ -299,11 +299,21 @@ nav > ul > li > div:hover > span
 	margin-bottom: 0.5rem;
 	vertical-align: text-top;
 }
-#dialogBox tr > td:first-child
+#dialogBox .documentation tr > td:first-child
 {
 	font-weight: bold;
 	color: #40c4db;
 }
+#dialogBox .about a
+{
+	color:#53198a;
+}
+#dialogBox .about a:hover
+{
+	color:#232421;
+	background-color: #8a2be2;
+}
+
 .debugBtns
 {
     color: #dfdbd2;

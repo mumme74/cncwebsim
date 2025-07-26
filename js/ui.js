@@ -121,6 +121,7 @@ CWS.UI.prototype.handleTopMenu = function(ev)
         case "Documentation":
             var d = new CWS.DialogBox(title);
             d.documentationGcode(this.controller);
+            break;
         case "License":
             const a = document.createElement("a");
             a.setAttribute("href", "https://opensource.org/license/mit");
@@ -509,14 +510,15 @@ CWS.DialogBox.prototype.tool = function (controller)
 CWS.DialogBox.prototype.about = function ()
     {
         html = `
-        <div class="scrollable">
+        <div class="scrollable about">
             <p>This webapp was created by
-            <a href="https://filipecaixeta.com.br/" style="color:blue:">Filipe Caixeta</a> back in 2016. <br>
+            <a href="https://github.com/filipecaixeta/cncwebsim">Filipe Caixeta</a> back in 2016. <br>
             It contained many features from the start, hovever it lacked in some regards.
             Containing some bugs and lacked a more advanced G-Code interpreter.</p>
             <p>It was pickup by
-            <a href="https://github.com/mumme74/cncwebsim/tree/improvements" style="color:blue:">
+            <a href="https://github.com/mumme74/cncwebsim/tree/improvements">
                 Fredrik Johansson
+            </a>
             in 2025 as a preparation for a course in programming I am going to
             teach in the autumn, where the attandants are beginner students for
             industrial production.</p>
