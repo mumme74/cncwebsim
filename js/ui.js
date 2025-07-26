@@ -95,6 +95,10 @@ CWS.UI.prototype.handleTopMenu = function(ev)
             var d = new CWS.DialogBox(title);
             d.openMachine(this.controller);
             break;
+        case "Rename Project":
+            var d = new CWS.DialogBox(title);
+            d.renameProject(this.controller);
+            break;
         case "Delete Project":
             var d = new CWS.DialogBox(title);
             d.deleteProject(this.controller);
@@ -149,7 +153,8 @@ CWS.UI.prototype._setupControllerEvents = function(controller)
                 `project: ${name || ""}`;
         }
         controller.addEventListener("create", setProjectName);
-        controller.addEventListener("open", setProjectName);
+        controller.addEventListener("open",   setProjectName);
+        controller.addEventListener("rename", setProjectName);
 
         const setMachineChange = (machine)=>{
             const tbl = {
@@ -296,6 +301,46 @@ CWS.DialogBox.prototype.openProject = function (controller)
         this.projectDialogs(fileList, controller, (projectName)=>{
             controller.openProject(projectName);
         });
+    }
+
+CWS.DialogBox.prototype.renameProject = function (controller)
+    {
+        let curName = controller.storage.currentProjectHeaderCache?.name;
+        if (!curName) curName = "Untitled";
+        html = `
+            <label for="newName">Rename ${curName}</label>
+            <input type="text" name="newName" id="newName"
+                   value="${curName}" maxlength="20"/><br>
+            <span style="color:red;" id="nameError"></span>`;
+        this.dialog.append($(html));
+        this.dialog.dialog(
+          {
+          width: 400,
+          buttons:
+            {
+                "Ok": function (e) {
+                    const root = document.querySelector("#dialogBox"),
+                          newName = root.querySelector("#newName"),
+                          nameError = root.querySelector("#nameError");
+                    nameError.innerText = "";
+                    if (newName.value.length < 3) {
+                        nameError.innerText = "Name to short!";
+                        return;
+                    }
+
+                    if (!controller.renameProject(newName.value)) {
+                        nameError.innerText = "Name already taken";
+                        return;
+                    }
+
+                    $(this).dialog("close");
+                },
+                  "Cancel": function()
+                {
+                      $(this).dialog("close");
+                }
+            }
+          });
     }
 
 
@@ -590,7 +635,7 @@ CWS.DialogBox.prototype.about = function ()
         this.dialog.dialog({
           width: 700,
           buttons: {
-                "Cancel": () => {
+                "Cancel": function () {
                       $(this).dialog("close");
                 }
             }
@@ -616,7 +661,7 @@ CWS.DialogBox.prototype.documentationGcode = function (controller)
           width: 700,
           buttons:
             {
-                  "Cancel": () => {
+                  "Cancel": function () {
                       $(this).dialog("close");
                 }
             }
@@ -637,7 +682,7 @@ CWS.DialogBox.prototype.importFile = function (controller)
           width: 400,
           buttons:
             {
-                "Ok": () => {
+                "Ok": function () {
                     const node = dialog[0].querySelector("#fileopen");
                     const reader = new FileReader();
                     reader.addEventListener('load', e=>{

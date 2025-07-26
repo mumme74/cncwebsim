@@ -16,6 +16,7 @@ CWS.Controller = function (editor,storage,renderer,motion)
         // Possible events are:
         //   create
         //   open
+        //   rename
         //   close
         //   delete
         //   save
@@ -179,6 +180,16 @@ CWS.Controller.prototype.openProject = function(projectName)
             this.interpreterRun();
         this.renderer.setController(this); // reset grid plane
     };
+
+CWS.Controller.prototype.renameProject = function(name)
+    {
+        if (this.storage.renameCurrentProject(name))
+            return false;
+
+        this._emitEvent('rename', name);
+
+        return true;
+    }
 
 CWS.Controller.prototype.deleteProject = function(projectName)
     {

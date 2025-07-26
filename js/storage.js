@@ -357,6 +357,38 @@ CWS.Storage.prototype.getUniqueProjectName = function (projectName)
         return projectName;
     };
 
+CWS.Storage.prototype.renameCurrentProject = function (name)
+    {
+        // update name and save it
+        if (name in this.projectsNameCache)
+            return false;
+
+        // update current project
+        const oldName = this.currentProjectHeaderCache.name;
+        this.currentProjectHeaderCache.name = name;
+        this.saveCurrentProjectHeader(this.currentProjectHeaderCache);
+
+        // update namecache
+        const oldObj  = this.projectsNameCache[oldName]
+        delete this.projectsNameCache[oldName];
+        this.projectsNameCache[name] = oldObj;
+
+        // update entry in all projects
+        var projects = this.getData("projects");
+        if (oldName in projects) {
+            const oldPrj = projects[oldName];
+            oldPrj.name = name;
+            delete projects[oldName];
+            projects[name] = oldPrj;
+        } else {
+            projects[name] = {
+                header: this.currentProjectHeaderCache,
+                code:   this.currentProjectCode
+            };
+        }
+        this.saveProjects(projects);
+    }
+
 CWS.Storage.prototype.reset = function ()
     {
         this.storage.clear();
