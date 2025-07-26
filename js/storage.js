@@ -396,3 +396,8 @@ CWS.Storage.prototype.reset = function ()
     {
         this.storage.clear();
     }
+
+CWS.Storage.prototype.currentProjectName = function()
+    {
+        return this.currentProjectHeaderCache.name;
+    }

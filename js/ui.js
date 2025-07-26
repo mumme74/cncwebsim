@@ -117,6 +117,9 @@ CWS.UI.prototype.handleTopMenu = function(ev)
         case "Export STL":
             this.controller.exportToOBJ();
             break;
+        case "Export GCode":
+            this.controller.exportGCode();
+            break;
         case "Import File":
             var d = new CWS.DialogBox(title);
             d.importFile(this.controller);
@@ -169,7 +172,7 @@ CWS.UI.prototype._setupControllerEvents = function(controller)
         controller.addEventListener("machineChange", setMachineChange);
 
         // incase they already fired
-        setProjectName(controller.storage.currentProjectHeaderCache?.name);
+        setProjectName(controller.storage.currentProjectName());
         setMachineChange(controller.storage.machineType);
     }
 
@@ -305,7 +308,7 @@ CWS.DialogBox.prototype.openProject = function (controller)
 
 CWS.DialogBox.prototype.renameProject = function (controller)
     {
-        let curName = controller.storage.currentProjectHeaderCache?.name;
+        let curName = controller.storage.currentProjectName();
         if (!curName) curName = "Untitled";
         html = `
             <label for="newName">Rename ${curName}</label>

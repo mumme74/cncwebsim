@@ -334,6 +334,13 @@ CWS.Controller.prototype.exportToOBJ = function()
         this._createDownload(result, filename);
     }
 
+CWS.Controller.prototype.exportGCode = function()
+    {
+        const code = this.editor.getCode();
+        const name = this.storage.currentProjectName();
+        this._createDownload(code, `${name}.gcode`);
+    }
+
 CWS.Controller.prototype.importFile = function(path, content)
     {
         let idx = path.lastIndexOf('/'), file = path;
