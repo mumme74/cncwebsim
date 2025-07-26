@@ -33,12 +33,22 @@ class PanZoomSelector
             if (ev.key == 'Escape')
                 this.changeState(this.STATES.NONE);
         });
-        // a disables keypress, we re-eanable it
+
+        let blockReEnable = false;
+        const onMouseDown = () => {
+            blockReEnable = true;
+        }
+
+        this.panBtn.addEventListener('mousedown', onMouseDown);
+        this.zoomBtn.addEventListener('mousedown', onMouseDown);
+
+        // a move disables keypress, we re-eanable it
         controller.renderer.container.addEventListener('mouseup', (evt)=>{
-            if (this._state !== this.STATES.NONE)
+            if (this._state !== this.STATES.NONE && !blockReEnable)
                 setTimeout(this.control.setState.bind(
                                this.control, this._state),
                           0);
+            blockReEnable = false;
         })
     }
 
