@@ -234,6 +234,10 @@ CWS.Storage.prototype.defineVariable = function(key, defaultVlu, setCb) {
 CWS.Storage.prototype.setObjData = function (key, objKey, newVlu)
     {
         var data = this.getData(key);
+        if (!data) {
+            data = {};
+            this.saveData(key, data);
+        }
         data[objKey] = newVlu;
         this.saveData(key, data);
     };
