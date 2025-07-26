@@ -568,7 +568,7 @@ CWS.DialogBox.prototype.documentationGcode = function (controller)
 CWS.DialogBox.prototype.importFile = function (controller)
     {
         html = `
-        <label for="fileopen">Coohse a poject or gcode file</label>
+        <label for="fileopen">Choose a project(*.json) or .gcode file</label>
         <input type="file" id="fileopen" name="fileopen"
                accept="application/json, text/x-gcode, text/x.gcode, .gcode" />
         `;
