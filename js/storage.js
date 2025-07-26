@@ -145,7 +145,7 @@ CWS.Storage.prototype.storageCheckKeys = function ()
         }
 
         data = this.getData("currentProjectHeader");
-        if (!data.name || !data.machine?.mtype)
+        if (!data || !data.name || !data.machine?.mtype)
             this.isFirstRun = true; // first time or something got messed up.
         else {
             this.currentProjectHeaderCache = data;
@@ -173,7 +173,7 @@ CWS.Storage.prototype.getData = function (key, defaultVlu)
 CWS.Storage.prototype.getObjData = function (key, objKey, defVlu)
     {
         var data = this.getData(key);
-        if (objKey in data)
+        if (data && objKey in data)
             return data[objKey];
         return defVlu;
     };
@@ -279,7 +279,7 @@ CWS.Storage.prototype.loadProject = function (projectName,saveCurrent)
         if (saveCurrent==true)
             this.saveCurrentProjectToProjectsList();
         var projects = this.getData("projects");
-        if (projects[projectName]!==undefined)
+        if (projects && projects[projectName]!==undefined)
         {
             this.saveCurrentProjectHeader(projects[projectName].header);
             this.saveCurrentProjectCode(projects[projectName].code);
@@ -290,7 +290,7 @@ CWS.Storage.prototype.saveCurrentProjectToProjectsList = function ()
     {
         var currentProject = {};
         currentProject.header = this.getData("currentProjectHeader");
-        if (!currentProject.header.name || !currentProject.header?.mtype)
+        if (!currentProject.header?.name || !currentProject.header?.mtype)
             return;
         currentProject.code = this.getData("currentProjectCode");
         if (!currentProject.code)
