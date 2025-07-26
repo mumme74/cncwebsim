@@ -160,9 +160,12 @@ CWS.Storage.prototype.getData = function (key, defaultVlu)
         {
             data = LZString.decompress(data);
         }
-        data = JSON.parse(data);
-        if (data !== undefined)
-            return data;
+
+        if (data) {
+            data = JSON.parse(data);
+            if (data !== undefined)
+                return data;
+        }
         return defaultVlu;
     };
 
