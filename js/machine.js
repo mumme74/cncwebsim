@@ -7,6 +7,8 @@ CWS.Machine = function (options)
     {
         options = options || {};
 
+        this.machineOffset = options.machineOffset ?? {x:0,y:0,x:0};
+
         this.renderResolution = options.renderResolution||64;
         this.workpiece = options.workpiece;
         this.machine = options.machine;
