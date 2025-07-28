@@ -249,6 +249,7 @@ CWS.Controller.prototype.loadMachine = function()
         });
         this.renderer.setController(this); // reset grid plane
         this.updateWireframe();
+        this.machine.setController(this);
 
         this._emitEvent('machineChange', this.storage.machineType)
     };

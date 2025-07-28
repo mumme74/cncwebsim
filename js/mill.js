@@ -366,7 +366,18 @@ CWS.Mill.prototype.calculatePositionAndTexture = function(dimensions,toolRadius)
         return [positions,texturePos];
     };
 
-CWS.Mill.prototype._create3DWorkpiece = function ()
+CWS.Mill.prototype._create3DWorkpiece = function()
+    {
+        this.offset.z += this.workpiece.z/2
+        const cutout = new Cutout(this);
+        cutout.lineDetect(this.motionData);
+
+        this.mesh3D.position.x = -this.workpiece.x/2;
+        this.mesh3D.position.y = -this.workpiece.y/2;
+        this.mesh3D.position.z = -this.workpiece.z/2;
+    }
+
+CWS.Mill.prototype._create3DWorkpieceOld = function ()
     {
         // this.toolTexture = this.createToolTexture(32,this.tool.angle);
         var dimensions = this.workpiece;

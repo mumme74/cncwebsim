@@ -11,9 +11,8 @@ class Cutout {
     constructor(machine)
     {
         this.machine = machine;
-        this.toolRadius = machine.toolRadius;
-        this.workpiece = machine.workpiece;
-        this.motionData = this.motionData
+
+        this.pntCnt = 0;
     }
 
     // a point is less than the smaller xy it has
@@ -23,7 +22,7 @@ class Cutout {
      * @param {point} pnt2
      * @returns {boolean} True if pnt1 < pnt2
      */
-    pntLT_XY = function(pnt1, pnt2)
+    pntLT_XY(pnt1, pnt2)
     {
         return pnt1.x * pnt1.y <  pnt2.x * pnt2.y;
     }
@@ -34,7 +33,7 @@ class Cutout {
      * @param {point} pnt2
      * @returns {boolean} True if pnt1 == pnt2
      */
-    pntEQ_XY = function(pnt1, pnt2)
+    pntEQ_XY(pnt1, pnt2)
     {
         return pnt1.x * pnt1.y ===  pnt2.x * pnt2.y;
     }
@@ -45,7 +44,7 @@ class Cutout {
      * @param {point} pnt2
      * @returns {boolean} True if pnt1 <= pnt2
      */
-    pntLTEQ_XY = function(pnt1, pnt2)
+    pntLTEQ_XY(pnt1, pnt2)
     {
         return pnt1.x * pnt1.y ===  pnt2.x * pnt2.y;
     }
@@ -58,7 +57,7 @@ class Cutout {
      * @param {point} pnt2
      * @returns {number} The distance
      */
-    distanceXY = function(pnt1, pnt2)
+    distanceXY(pnt1, pnt2)
     {
         return Math.sqrt(Math.pow(pnt2.x-pnt1.x, 2) +
                          Math.pow(pnt2.y-pnt1.y, 2));
@@ -70,11 +69,12 @@ class Cutout {
      * @param {point} pnt2
      * @returns {boolean} if within circle
      */
-    isIntersecting = function(pnt1, pnt2)
+    isIntersecting(pnt1, pnt2)
     {
         const xDiff = pnt2.x - pnt1.x,
               yDiff = pnt2.y - pnt1.y;
-        return (Math.abs(xDiff) < toolDia && Math.abs(yDiff) < toolDia);
+        return (Math.abs(xDiff) < this.toolDia &&
+                Math.abs(yDiff) < this.toolDia);
     }
 
     /**
@@ -86,7 +86,7 @@ class Cutout {
      * @param {point} trail  The trail point of intersecting line
      * @return {null | point} Coordinates of intersecting point or null
     */
-    linesIntersect = function(fence1, fence2, pnt, trail)
+    linesIntersect(fence1, fence2, pnt, trail)
     {
         // Check if none of the lines are of length 0
         if ((fence1.x === fence2.x && fence1.y === fence2.y) ||
@@ -196,48 +196,61 @@ class Cutout {
 //         }
 //     }
 
-    lineDetect = function()
+    lineDetect(motionData)
     {
         /**
          * Find the point which has gone further the most.
          * As it is i 3d not 4 or 5D we only need to find the depth
          */
+        this.motionData = motionData;
+        this.toolDia = this.machine.tool.radius*2;
+
+        // TODO
+        // only to reset insane renderresolution for vanilla mill
+        // default should be adjusted, .
+        this.machine.renderResolution = 64;
+
         // contains all vertexes (points) with deepest cuts (smallest z)
         // (same coordinates but at a shallower depth are removed in paths)
         const paths = this.getPaths();
         this.pointAngle(paths); // calc angles of the pnts related to prev
         this.elimPocketDeckPnt(paths);
-        this.toolRadius(paths); // Draw tool outset
+        this.toolOffset(paths); // Draw tool outset
 
         // create a geometry inverted, sort of plane to cut out of workpiece
-        this.createCutoutPlane(paths, boundingBox);
+        this.triangulateVertexes(paths);
 
     }
 
-    getPaths = function ()
+    getPaths()
     {
         const paths = [],
-              offsetX = this.machineOffset.x + this.toolRadius,
-              offsetY = this.machineOffset.y + this.toolRadius;
-        const left  =  -this.workpiece.width/2 + offsetX,
-              right =   this.workpiece.width/2 + offsetX,
-              top   =   this.workpiece.height/2 + offsetY,
-              bottom = -this.workpiece.height/2 + offsetY,
-              upper  = this.workpiece.z/2 + this.machineOffset.z,
-              lower  = -this.workpiece.z/2 + this.machineOffset.z;
+              toolRadius = this.machine.tool.radius,
+              workpiece = this.machine.workpiece,
+              offsetX = this.machine.offset.x + toolRadius,
+              offsetY = this.machine.offset.y + toolRadius;
+        const left  =  -workpiece.x/2 - offsetX,
+              right =   workpiece.x/2 + offsetX,
+              top   =   workpiece.y/2 + offsetY,
+              bottom = -workpiece.y/2 - offsetY,
+              upper  = workpiece.z/2 + this.machine.offset.z,
+              lower  = -workpiece.z/2 - this.machine.offset.z;
+
+        const motionData = this.machine.motionData.positions;
 
         let curPath = {}, newPath = true, prevXY = "";
 
         // to find the bounding Box of our cuts
-        let maxX = left, minX = right,
+        let maxX = left,   minX = right,
             maxY = bottom, minY= top,
-            minZ=upper, idx = 0;
+            minZ = upper,
+            idx = 0;
 
-        for (let i = 0, end = this.motionData.length; i < end;){
+        for (let i = 0, end = motionData.length; i < end;){
             const pnt = {
-                x:this.motionData[i++],
-                y:this.motionData[i++],
-                z:this.motionData[i++]
+                x:motionData[i++],
+                y:motionData[i++],
+                z:motionData[i++]
             }
 
             if (pnt.x >= left && pnt.x <= right &&
@@ -249,7 +262,7 @@ class Cutout {
                 const xy = pnt.x + "," + pnt.y;
 
                 if (pnt.z > upper) {
-                    if (curPath.length) {
+                    if (!newPath) {
                         paths.push(curPath); // begin a new path on next run
                         curPath.exitPnt = curPath[prevXY];
                         curPath = {};
@@ -257,12 +270,12 @@ class Cutout {
                     }
                 } else if (newPath) {
                     newPath = false;   // entering workpisce again
-                    curPath[xy] = {x:pnt.x, y:pnt.y, z:pnt.z, idx};
+                    curPath[xy] = {x:pnt.x, y:pnt.y, z:pnt.z, idx:i};
                     curPath.entryPnt = curPath[xy];
                 } else if (xy in curPath) {
                     if (curPath[xy].z > pnt.z) {
-                        curPath[xz].z = pnt.z;
-                        curPath[xz].idx = idx; // position motiondata
+                        curPath[xy].z = pnt.z;
+                        curPath[xy].idx = idx; // position motiondata
                     }
                 } else
                     curPath[xy] = {x:pnt.x, y:pnt.y, z:pnt.z, idx:i};
@@ -279,22 +292,24 @@ class Cutout {
             ++idx;
         }
 
-        if (!newPath) // possible that program hasnt gone home when it ends.
+        if (!newPath) { // possible that program hasnt gone home when it ends.
             paths.push(curPath);
+            curPath.exitPnt = curPath[prevXY];
+        }
 
         // we should now have paths containing the deepest cut in every in each XY position
         paths.bBox = {
-            x1: minX - this.toolRadius,
-            y1: minY - this.toolRadius,
-            x2: maxX + this.toolRadius*2,
-            y2: maxY + this.toolRadius*2,
-            z: minZ
+            minX: minX - toolRadius,
+            minY: minY - toolRadius,
+            maxX: maxX + toolRadius*2,
+            maxY: maxY + toolRadius*2,
+            minZ: minZ
         };
         return paths;
     }
 
     // add lines and calulates their angles relative to workpiece xyz
-    pointAngle = function(paths, bBox)
+    pointAngle(paths, bBox)
     {
         // create vertexes out of paths,
         // when we have 2 lines we can determine the angle
@@ -304,16 +319,17 @@ class Cutout {
         // each line segment has 3 angles i,j,k
         for (const path of paths) {
             path.pnts = [];
-            let minY = bBox.maxY, maxY = bBox.minY,
-                minX = bBox.maxX, maxX = bBox.minX,
+            let minY = paths.bBox.maxY, maxY = paths.bBox.minY,
+                minX = paths.bBox.maxX, maxX = paths.bBox.minX,
                 minZ = 0;
 
-            path.lowerLeft = path.lines[0].p1; // as in moste lower left corner
+            path.lowerLeft = Object.values(path)[0]; // as in most lower left corner
+            path.lowerLeftIdx = 0;
 
             let prev = path.entryPnt, idx = -1;
-            for (const [key, pnt] of Object.entrie(path)) {
-                idx++;
-                if (key === 'entryPnt' || key === 'exitPnt')
+            path.pnts.push(prev);
+            for (const [key, pnt] of Object.entries(path)) {
+                if (isNaN(key.slice(0,1)))
                     // entry and exitPnts are convienience,
                     // are doubled with ordinary points
                     continue;
@@ -332,6 +348,11 @@ class Cutout {
                     pnt.k = Math.atan2(xi, zi);
 
                     path.pnts.push(pnt);
+                    idx++;
+                } else {
+                    pnt.i = 0;
+                    pnt.j = 0;
+                    pnt.k = 0;
                 }
 
                 minY = Math.min(minY, pnt.y);
@@ -341,8 +362,8 @@ class Cutout {
                 minZ = Math.min(minZ, pnt.z);
 
                 // store left-lower most pnt to start creating vertexes from
-                if (this.pntLT_XY(path.lowerLeft, line.p1)) {
-                    path.lowerLeft = line.p1;
+                if (this.pntLT_XY(path.lowerLeft, pnt)) {
+                    path.lowerLeft = pnt;
                     path.lowerLeftIdx = idx;
                 }
 
@@ -353,7 +374,7 @@ class Cutout {
         }
     }
 
-    elimPocketDeckPnt = function(paths)
+    elimPocketDeckPnt(paths)
     {
         // When in a pocket we might have several points "inside" with same z
         // that should not be part of output mesh
@@ -388,7 +409,10 @@ class Cutout {
         //     and possible subpaths (like terasses) where z changes.
 
 
-        const createSubpath = (path, startPoint) => {
+        const createSubpath = (path, startPoint, startPointIdx) => {
+            if (!path.pnts.length)
+                return;
+
             const subPath = [];
             subPath.startPoint = startPoint; // lowerLeft in descr.
             path.subPaths.push(subPath);
@@ -403,13 +427,19 @@ class Cutout {
             subPath.rings = [ring];
             const outerRing = ring;
 
+            // specialcase when only have one point
+            if (path.pnts.length < 2) {
+                ring.push(path.pnts[0]);
+                return;
+            }
+
             // when we have completed a walk around
             const finishRing = (newStartPoint) => {
                 if (subPath.rings.length > 1)
                     subPath.rings.pop(); // previous ring eliminated
                 else
                     // first innerring disable innerring edge on outerring
-                    outerRing.noRightEdge = false;
+                    outerRing.noRightEdge = true;
                 ring = [newStartPoint];
                 subPath.rings.push(ring);
                 hasLeftStartCircle = false;
@@ -490,9 +520,11 @@ class Cutout {
 
             // lowerLeft might not be at start of path we need to handle the
             // flip around seamlessly
-            let i = startPoint+1, // begining at first pnt after
-                end    = startPoint,
-                flipAt = path.lines.length;
+            let i = startPointIdx+1, // begining at first pnt after
+                end    = startPointIdx,
+                flipAt = path.pnts.length;
+            if (flipAt === i)
+                i = 0;
 
             while (i !== end) {
                 const pnt = path.pnts[i];
@@ -523,6 +555,8 @@ class Cutout {
                 } else
                     hasLeftStartCircle = true; // start tracking
 
+                ring.push(pnt);
+
                 // flipping over to unaccounted at beginning
                 if (++i === flipAt)
                     i = 0; // start over from beginning
@@ -532,12 +566,12 @@ class Cutout {
 
         for (const path of paths) {
             path.subPaths = [];
-            createSubpath(path, path.startPoint);
+            createSubpath(path, path.lowerLeft, path.lowerLeftIdx);
         }
     }
 
     // tool outset
-    toolOffset = function(paths)
+    toolOffset(paths)
     {
         // we should create a line on left and right side of line with
         // tool radius and draw an arc in between
@@ -551,23 +585,23 @@ class Cutout {
         //   +
 
         const vertexes = []; // should optimse later when i got it working
-        const angleIncr = this.renderResolution / (2*this.toolRadius*Math.PI);
-        const toolDia = this.toolRadius * 2;
+        const toolRadius = this.machine.tool.radius;
+        const angleIncr = (this.toolDia*Math.PI) / this.machine.renderResolution;
         const piHalf = Math.PI/2;
 
-        const createArc = (center, startAngle, endAngle, line) => {
-            line.arc = [];
+        const createArc = (centerPnt, startAngle, endAngle) => {
+            centerPnt.arc = [];
             let a = startAngle + angleIncr;
-            for (l;a < endAngle; a += angleIncr)
-                line.arc.push({x:center.x*Math.cos(a),
-                               y:center.y*Math.sin(a),
-                               z:center.z})
+            for (;a < endAngle; a += angleIncr)
+                centerPnt.arc.push({x:centerPnt.x*Math.cos(a),
+                                    y:centerPnt.y*Math.sin(a),
+                                    z:centerPnt.z})
         }
 
         /// x, y as in diff to toolRadius
         const movePnt = (pnt, xDiff, yDiff) => {
-            pnt.x += this.toolRadius - xDiff;
-            pnt.y += this.toolRadius - yDiff;
+            pnt.x += toolRadius - xDiff;
+            pnt.y += toolRadius - yDiff;
         }
 
         // intersects as in XY plane within toolRadius circle
@@ -575,12 +609,12 @@ class Cutout {
         const interectPntXY = (pnt1, pnt2) => {
             const xDiff = pnt2.x - pnt1.x,
                   yDiff = pnt2.y - pnt1.y;
-            if (Math.abs(xDiff) < toolDia &&
-                Math.abs(yDiff) < toolDia)
+            if (Math.abs(xDiff) < this.toolDia &&
+                Math.abs(yDiff) < this.toolDia)
             {
                 const angle = Math.atan2(yDiff, xDiff);
                 const hypo = Math.sqrt(Math.pow(xDiff,2) + Math.pow(yDiff,2));
-                const intrusion = toolDia - hypo; // as in intrusion into pnt1 circle
+                const intrusion = this.toolDia - hypo; // as in intrusion into pnt1 circle
                 const x = pnt1.x + intrusion * Math.cos(angle),
                       y = pnt1.y + intrusion * Math.sin(angle);
                 return {x, y};
@@ -588,51 +622,67 @@ class Cutout {
             return null;
         }
 
-        const upper = this.workpiece.z/2+this.machineOffset,
-              under = -this.workpiece.z/2+this.machineOffset;
+        const upper =  this.machine.workpiece.z / 2 + this.machine.offset.z,
+              under = -this.machine.workpiece.z / 2 + this.machine.offset.z;
 
-        for (const path of paths) {
-            let prev = null;
-            for (const line of path.line) {
-                const rY = Math.cos(line.i) * this.toolRadius,
-                      rX = Math.sin(line.i) * this.toolRadius,
-                      // z might be below bottom face
-                      z = Math.max(line.p1.z, under);
+        const doSubPath = (subPath, path) => {
+            let pntCnt = 0;
+            for (const ring of subPath.rings) {
+                let trail;
 
-                // we might not always have a mirror in uppper surface,
-                // when we curve in z surface or have steps
-                line.p1r = {x:line.p1.x+rX, y:line.p1+rY, z},
-                line.p2r = {x:line.p2.x+rX, y:line.p1+rY, z},
-                line.p1l = {x:line.p1.x-rX, y:line.p1-rY, z},
-                line.p2l = {x:line.p1.x-rX, y:line.p1-rY, z};
+                for (const pnt of ring) {
 
-                if (!line.p1 !== path.entryPnt && !line.p2 != path.exitPnt) {
-                    // calculate difference to previous line, draw arc
-                    const diffAngle = line.i - prev.i;
-                    if (diffAngle < 0) { // right turn, arc on left
-                        // shorten right
-                        movePnt(line.p1r, rX, rY);
-                        movePnt(prev.p2r, rX, rY);
-                        createArc(p1, prev.i + piHalf, line.i + piHalf);
+                    const rY = Math.cos(pnt.i) * toolRadius,
+                        rX = Math.sin(pnt.i) * toolRadius,
+                        // z might be below bottom face
+                        z = Math.max(pnt.z, under);
 
-                    } else if (diffAngle > 0) { // left turn, arc on the right
-                        // shorten left
-                        movePnt(line.p1l, rX, rY);
-                        movePnt(prev.p2l, rX, rY);
-                        createArc(p1, prev.i - piHalf, line.i - piHalf);
+                    // we might not always have a mirror in uppper surface,
+                    // when we curve in z surface or have steps
+                    if (!subPath.noRightEdge) {
+                        pnt.right = {x:pnt.x+rX, y:pnt.y+rY, z};
+                        pntCnt++;
                     }
-                }
+                    pnt.left = {x:pnt.x-rX, y:pnt.y-rY, z};
+                    pntCnt++;
 
-                prev = line;
+                    if (trail && pnt !== path.entryPnt && pnt !== path.exitPnt) {
+                        // calculate difference to previous line, draw arc
+                        const diffAngle = pnt.i - trail.i;
+                        if (diffAngle < 0) { // right turn, arc on left
+                            // shorten right
+                            if (!subPath.noRightEdge)
+                                movePnt(pnt.right, rX, rY);
+                            createArc(pnt, trail.i + piHalf, pnt.i + piHalf);
+                            pntCnt += pnt.arc.length;
+
+                        } else if (diffAngle > 0) { // left turn, arc on the right
+                            // shorten left
+                            movePnt(pnt.left, rX, rY);
+                            createArc(pnt, trail.i - piHalf, pnt.i - piHalf);
+                            pntCnt += pnt.arc.length;
+                        }
+                    }
+
+                    trail = pnt;
+                }
             }
 
+            return pntCnt;
+        }
+
+        // go through all paths and it's subsequent subpaths.
+        for (const path of paths) {
+            for (const subPath of path.subPaths)
+                this.pntCnt  += doSubPath(subPath, path);
+
             // handle entry and exit arcs
-            const entLine = path.lines[0],
-                  exitLine = path.lines[path.lines.length-1];
-            let entStAngle = entLine.i + piHalf*3,
-                entEnAngle = entLine.i + piHalf,
-                extStAngle = exitLine + piHalf*3,
-                extEnAngle = exitLine + piHalf;
+            const entPnt = path.pnts[0],
+                  exitPnt = path.pnts[path.pnts.length-1];
+            let entStAngle = entPnt.i + piHalf*3,
+                entEnAngle = entPnt.i + piHalf,
+                extStAngle = exitPnt + piHalf*3,
+                extEnAngle = exitPnt + piHalf;
 
             const intPnt = interectPntXY(path.entryPnt, path.exitPnt);
             if (intPnt) {
@@ -644,12 +694,14 @@ class Cutout {
             }
 
             // draw arc at path ends
-            createArc(path.exitPnt, extStAngle, extEnAngle, exitLine);
-            createArc(path.entryPnt, entStAngle, entEnAngle, entLine);
+            createArc(path.exitPnt, extStAngle, extEnAngle, exitPnt);
+            createArc(path.entryPnt, entStAngle, entEnAngle, entPnt);
+            this.pntCnt += path.exitPnt.arc.length;
+            this.pntCnt += path.entryPnt.arc.length
         }
     }
 
-    linesToVertexes = function(paths)
+    triangulateVertexes(paths)
     {
         // Begin on lower left point (Left line start) walk around on the
         // left edge, count all the center points. Halt when we reach path.length
@@ -661,9 +713,57 @@ class Cutout {
         // * Repeat the with right line
         //
 
+        let i = 0;
+        const points = new Float32Array(this.pntCnt*3);
+        const addPnt = (pnt) => {
+            points[i++] = pnt.x;
+            points[i++] = pnt.y;
+            points[i++] = pnt.z;
+        }
+
+        const doRing = (ring, subPath) => {
+            for (const pnt of ring) {
+                addPnt(pnt.left);
+                if (pnt.right)
+                    addPnt(pnt.right);
+                if (pnt.left.arc) {
+                    for (const aPnt of pnt.arc)
+                        addPnt(aPnt);
+                }
+            }
+        }
+
+        // for debug in so far should be removed later.
+        for (const path of paths) {
+            for (const subPath of path.subPaths) {
+                for (const ring of subPath.rings)
+                    doRing(ring, subPath);
+            }
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.addAttribute('position', new THREE.BufferAttribute(points, 3));
+
+
+            // Create the points material
+        const material = new THREE.PointsMaterial({ color: 0xff0000, size: 1 }); // Red points with size 0.1
+        material.wireframe = true;
+
+
+        //const material1 = new THREE.MeshNormalMaterial();
+        //material1.wireframe = true;
+
+
+        // Create the points object
+        const pointsPlane = new THREE.Points(geometry, material);
+        pointsPlane.position.x = -this.machine.workpiece.x / 2;
+        pointsPlane.position.y = -this.machine.workpiece.y / 2;
+
+        // Add the points to the scene
+        this.machine.controller.renderer.addMesh('cutout', pointsPlane);
     }
 
-    createCutOutMeshes = function(paths)
+    createCutOutMeshes(paths)
     {
         // create lines out of paths, add 2 (each side)
         // when we have 2 lines we can determine the angle

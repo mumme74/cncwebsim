@@ -7,7 +7,7 @@ CWS.Machine = function (options)
     {
         options = options || {};
 
-        this.machineOffset = options.machineOffset ?? {x:0,y:0,x:0};
+        this.offset = options.machineOffset ?? {x:0,y:0,z:0};
 
         this.renderResolution = options.renderResolution||64;
         this.workpiece = options.workpiece;
@@ -41,6 +41,11 @@ CWS.Machine = function (options)
     }
 
 CWS.Machine.prototype.constructor = CWS.Machine;
+
+CWS.Machine.prototype.setController = function(controller)
+    {
+        this.controller = controller;
+    }
 
 CWS.Machine.prototype.setMotion = function (motionData)
     {
