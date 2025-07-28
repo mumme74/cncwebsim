@@ -294,7 +294,7 @@ CWS.Storage.prototype.saveCurrentProjectToProjectsList = function ()
     {
         var currentProject = {};
         currentProject.header = this.getData("currentProjectHeader");
-        if (!currentProject.header?.name || !currentProject.header?.mtype)
+        if (!currentProject.header?.name || !currentProject.header?.machine.mtype)
             return;
         currentProject.code = this.getData("currentProjectCode");
         if (!currentProject.code)
