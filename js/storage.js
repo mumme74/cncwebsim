@@ -132,7 +132,7 @@ CWS.Storage.prototype.storageCheckKeys = function ()
         this._keys.forEach(function(obj){
             var data = this.storage.getItem(obj.name);
             if (data === null) {
-                this.saveData(obj.defVlu);
+                this.saveData(obj.name, obj.defVlu);
                 this.isFirstRun = true;
             }
         }, this);
