@@ -181,6 +181,8 @@ class ViewHelper {
 
         this.editor.controls.update();
         this.editor.render();
+        this.controls.update();
+        this.render();
 
         if (this.angleTo(this.q1, this.q2) === 0)
             this.animating = false;
