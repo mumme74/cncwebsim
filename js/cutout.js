@@ -94,19 +94,19 @@ class Cutout {
             return null;
         }
 
-        denominator = ((trail.y - pnt.y) * (fence2.x - fence1.x)
-                    - (trail.x - pnt.x) * (fence2.y - fence1.y));
+        const denom = ((trail.y - pnt.y) * (fence2.x - fence1.x)
+                      - (trail.x - pnt.x) * (fence2.y - fence1.y));
 
         // Lines are parallel
-        if (denominator === 0)
+        if (denom === 0)
             return null;
 
         const ua = ( (trail.x - pnt.x) * (fence1.y - pnt.y)
                      - (trail.y - pnt.y) * (fence1.x - pnt.x))
-                   / denominator;
+                   / denom;
         const ub = ( (fence2.x - fence1.x) * (fence1.y - pnt.y)
                      - (fence2.y - fence1.y) * (fence1.x - pnt.x))
-                   / denominator;
+                   / denom;
 
         // is the intersection along the segments
         if (ua < 0 || ua > 1 || ub < 0 || ub > 1)
@@ -200,7 +200,7 @@ class Cutout {
     {
         /**
          * Find the point which has gone further the most.
-         * As it is i 3d not 4 or 5D we only need to find the depth
+         * As it is in 3d not 4 or 5D we only need to find the depth
          */
         this.motionData = motionData;
         this.toolDia = this.machine.tool.radius*2;
@@ -209,12 +209,19 @@ class Cutout {
         // only to reset insane renderresolution for vanilla mill
         // default should be adjusted, .
         this.machine.renderResolution = 64;
+        //this.machine.offset.x = -this.machine.workpiece.x/2;
+        //this.machine.offset.y = -this.machine.workpiece.y/2;
 
+        //console.time('linedetect')
         // contains all vertexes (points) with deepest cuts (smallest z)
         // (same coordinates but at a shallower depth are removed in paths)
         const paths = this.getPaths();
+
         this.pointAngle(paths); // calc angles of the pnts related to prev
+
         this.elimPocketDeckPnt(paths);
+        //console.timeEnd('linedetect')
+
         this.toolOffset(paths); // Draw tool outset
 
         // create a geometry inverted, sort of plane to cut out of workpiece
@@ -229,12 +236,12 @@ class Cutout {
               workpiece = this.machine.workpiece,
               offsetX = this.machine.offset.x + toolRadius,
               offsetY = this.machine.offset.y + toolRadius;
-        const left  =  -workpiece.x/2 - offsetX,
-              right =   workpiece.x/2 + offsetX,
-              top   =   workpiece.y/2 + offsetY,
-              bottom = -workpiece.y/2 - offsetY,
-              upper  = workpiece.z/2 + this.machine.offset.z,
-              lower  = -workpiece.z/2 - this.machine.offset.z;
+        const left  =  -workpiece.x + offsetX,
+              right =   workpiece.x + offsetX,
+              top   =   workpiece.y + offsetY,
+              bottom = -workpiece.y + offsetY,
+              upper  = workpiece.z + this.machine.offset.z,
+              lower  = -workpiece.z - this.machine.offset.z;
 
         const motionData = this.machine.motionData.positions;
 
@@ -245,6 +252,7 @@ class Cutout {
             maxY = bottom, minY= top,
             minZ = upper,
             idx = 0;
+        let discardCnt = 0;
 
         for (let i = 0, end = motionData.length; i < end;){
             const pnt = {
@@ -287,10 +295,13 @@ class Cutout {
                 minZ = Math.min(minZ, pnt.z);
 
                 prevXY = xy;
-            }
+            } else
+                discardCnt++
 
             ++idx;
         }
+
+        console.log('discarded', discardCnt);
 
         if (!newPath) { // possible that program hasnt gone home when it ends.
             paths.push(curPath);
@@ -362,7 +373,7 @@ class Cutout {
                 minZ = Math.min(minZ, pnt.z);
 
                 // store left-lower most pnt to start creating vertexes from
-                if (this.pntLT_XY(path.lowerLeft, pnt)) {
+                if (this.pntLT_XY(pnt, path.lowerLeft)) {
                     path.lowerLeft = pnt;
                     path.lowerLeftIdx = idx;
                 }
@@ -407,6 +418,17 @@ class Cutout {
         //
         //  When exiting, we should now have an outer-ring, a possible inner-ring
         //     and possible subpaths (like terasses) where z changes.
+
+        // Definitions:
+        //  A path is everything from entering workpice until exiting
+        //  If entering again, it will be a new path.
+        //  A job can have one or mor paths.
+        //
+        //  A subpath is when a path changes z while being inside workpiece
+        //  A path can have one or more subpaths
+        //
+        //  A ring is when cutting a pocket and removing in rings.
+        //  A subpath can have one or more rings.
 
 
         const createSubpath = (path, startPoint, startPointIdx) => {
@@ -465,7 +487,7 @@ class Cutout {
                 return this.distanceXY(pnt, trail)* Math.sin(ap);
             }
 
-            const passesOuterRing = (pnt, trail, i) => {
+            const passesOuterRing = (pnt, trail) => {
                 // find the closest 2 points on outer ring
                 let up = ring.length, trailUp = outerRing[up-1], pntUp,
                     dwn = ring.length, trailDwn = outerRing[dwn-1], pntDwn,
@@ -490,8 +512,8 @@ class Cutout {
                     }
 
                     // if we moving away further on both we are done.
-                    if (this.distanceXY(pntUp) > this.distanceXY(trailUp) &&
-                        this.distanceXY(pntDwn) > this.distanceXY(trailDwn)
+                    if (this.distanceXY(pntUp, pnt) > this.distanceXY(trailUp, pnt) &&
+                        this.distanceXY(pntDwn, pnt) > this.distanceXY(trailDwn, pnt)
                     )
                         return null;
 
@@ -522,14 +544,15 @@ class Cutout {
             // flip around seamlessly
             let i = startPointIdx+1, // begining at first pnt after
                 end    = startPointIdx,
-                flipAt = path.pnts.length;
+                flipAt = path.pnts.length,
+                trail = path.pnts[i > 0 ? i-1 : flipAt -1];
             if (flipAt === i)
                 i = 0;
 
             while (i !== end) {
                 const pnt = path.pnts[i];
 
-                const iSectObj = passesOuterRing(pnt, path.pnts[i-1]);
+                const iSectObj = passesOuterRing(pnt, trail);
                 if (iSectObj) {
                     // going out sets, going in clears.
                     crossPntOuter = !crossPntOuter ? iSectObj.iSectPnt : null;
@@ -539,23 +562,25 @@ class Cutout {
                 // maybe begin a new subpath?
                 if (prev.z !== pnt.z) {
                     finishRing(pnt);
-                    continue;
+                } else {
+
+                    // detect if we are within startpoints toolradius
+                    if (this.isIntersecting(startPoint, pnt)) {
+                        // track if we should track within tool circle of starPoint
+                        if (hasLeftStartCircle) {
+                            const d = this.distanceXY(startPoint, pnt);
+                            if (d > prevD) {
+                                finishRing(prev);
+                                i--; // back one as that is the new startPoint
+                            }
+                        }
+                    } else
+                        hasLeftStartCircle = true; // start tracking
+
+                    ring.push(pnt);
                 }
 
-                // detect if we are within startpoints toolradius
-                if (this.isIntersecting(startPoint, pnt)) {
-                    // track if we should track within tool circle of starPoint
-                    if (hasLeftStartCircle) {
-                        const d = this.distanceXY(startPoint, pnt);
-                        if (d > prevD) {
-                            finishRing(prev);
-                            i--; // back one as that is the new startPoint
-                        }
-                    }
-                } else
-                    hasLeftStartCircle = true; // start tracking
-
-                ring.push(pnt);
+                trail = pnt;
 
                 // flipping over to unaccounted at beginning
                 if (++i === flipAt)
@@ -596,12 +621,13 @@ class Cutout {
                 centerPnt.arc.push({x:centerPnt.x*Math.cos(a),
                                     y:centerPnt.y*Math.sin(a),
                                     z:centerPnt.z})
+            this.pntCnt += centerPnt.arc.length;
         }
 
         /// x, y as in diff to toolRadius
         const movePnt = (pnt, xDiff, yDiff) => {
-            pnt.x += toolRadius - xDiff;
-            pnt.y += toolRadius - yDiff;
+            pnt.x += xDiff;
+            pnt.y += yDiff;
         }
 
         // intersects as in XY plane within toolRadius circle
@@ -626,25 +652,25 @@ class Cutout {
               under = -this.machine.workpiece.z / 2 + this.machine.offset.z;
 
         const doSubPath = (subPath, path) => {
-            let pntCnt = 0;
             for (const ring of subPath.rings) {
                 let trail;
 
                 for (const pnt of ring) {
 
-                    const rY = Math.cos(pnt.i) * toolRadius,
-                        rX = Math.sin(pnt.i) * toolRadius,
-                        // z might be below bottom face
-                        z = Math.max(pnt.z, under);
+                    // sin and cos intentionally swithed here
+                    const lX = Math.sin(pnt.i) * toolRadius,
+                          lY = Math.cos(pnt.i) * toolRadius,
+                          // z might be below bottom face
+                          z = Math.max(pnt.z, under);
 
                     // we might not always have a mirror in uppper surface,
                     // when we curve in z surface or have steps
                     if (!subPath.noRightEdge) {
-                        pnt.right = {x:pnt.x+rX, y:pnt.y+rY, z};
-                        pntCnt++;
+                        pnt.right = {x:pnt.x-lX, y:pnt.y-lY, z};
+                        this.pntCnt++;
                     }
-                    pnt.left = {x:pnt.x-rX, y:pnt.y-rY, z};
-                    pntCnt++;
+                    pnt.left = {x:pnt.x+lX, y:pnt.y+lY, z};
+                    this.pntCnt++;
 
                     if (trail && pnt !== path.entryPnt && pnt !== path.exitPnt) {
                         // calculate difference to previous line, draw arc
@@ -652,29 +678,25 @@ class Cutout {
                         if (diffAngle < 0) { // right turn, arc on left
                             // shorten right
                             if (!subPath.noRightEdge)
-                                movePnt(pnt.right, rX, rY);
+                                movePnt(pnt.right, lX, lY);
                             createArc(pnt, trail.i + piHalf, pnt.i + piHalf);
-                            pntCnt += pnt.arc.length;
 
                         } else if (diffAngle > 0) { // left turn, arc on the right
                             // shorten left
-                            movePnt(pnt.left, rX, rY);
+                            movePnt(pnt.left, lX, lY);
                             createArc(pnt, trail.i - piHalf, pnt.i - piHalf);
-                            pntCnt += pnt.arc.length;
                         }
                     }
 
                     trail = pnt;
                 }
             }
-
-            return pntCnt;
         }
 
         // go through all paths and it's subsequent subpaths.
         for (const path of paths) {
             for (const subPath of path.subPaths)
-                this.pntCnt  += doSubPath(subPath, path);
+                doSubPath(subPath, path);
 
             // handle entry and exit arcs
             const entPnt = path.pnts[0],
@@ -713,9 +735,20 @@ class Cutout {
         // * Repeat the with right line
         //
 
-        let i = 0;
-        const points = new Float32Array(this.pntCnt*3);
+        const shape = new THREE.Shape();
+
+        const moveTo = (pnt)=>{
+            shape.moveTo(pnt.x, pnt.y);
+        }
+
+        const lineTo = (pnt) => {
+            shape.lineTo(pnt.x, pnt.y);
+        }
+
+        let i = 0, triCnt = 0;
+        const points = new Float32Array(this.pntCnt*3*2);
         const addPnt = (pnt) => {
+            lineTo(pnt);
             points[i++] = pnt.x;
             points[i++] = pnt.y;
             points[i++] = pnt.z;
@@ -731,31 +764,54 @@ class Cutout {
                         addPnt(aPnt);
                 }
             }
+            //addPnt(ring[0].right);
+            //addPnt(ring[1].left)
         }
 
         // for debug in so far should be removed later.
         for (const path of paths) {
             for (const subPath of path.subPaths) {
+                moveTo(subPath.rings[0][0])
                 for (const ring of subPath.rings)
                     doRing(ring, subPath);
             }
         }
+        console.log("pntCnt", i, " should equal ", points.length);
 
-        const geometry = new THREE.BufferGeometry();
-        geometry.addAttribute('position', new THREE.BufferAttribute(points, 3));
+        const extrudeSettings = {
+	        depth: 8,
+            bevelEnabled: true,
+            bevelSegments: 2,
+            steps: 2,
+            bevelSize: 1,
+            bevelThickness: 1
+        };
+
+        const geometry1 = new THREE.ExtrudeGeometry( shape, extrudeSettings );
+
+        const shapeMesh = new THREE.Mesh( geometry1, new THREE.MeshPhongMaterial() );
+        shapeMesh.position.x = -this.machine.workpiece.x / 2;
+        shapeMesh.position.y = -this.machine.workpiece.y / 2;
+        this.machine.controller.renderer.addMesh('cutout', shapeMesh);
+
+return;
+        const geometry2 = new THREE.BufferGeometry();
+
+        geometry2.addAttribute('position', new THREE.BufferAttribute(points, 3));
 
 
-            // Create the points material
+        // Create the points material
         const material = new THREE.PointsMaterial({ color: 0xff0000, size: 1 }); // Red points with size 0.1
         material.wireframe = true;
 
 
-        //const material1 = new THREE.MeshNormalMaterial();
-        //material1.wireframe = true;
+        const material1 = new THREE.MeshNormalMaterial();
+        material1.wireframe = true;
 
 
         // Create the points object
-        const pointsPlane = new THREE.Points(geometry, material);
+        //const pointsPlane = new THREE.Points(geometry, material1);
+        const pointsPlane = new THREE.Mesh(geometry2, material1);
         pointsPlane.position.x = -this.machine.workpiece.x / 2;
         pointsPlane.position.y = -this.machine.workpiece.y / 2;
 

@@ -368,7 +368,7 @@ CWS.Mill.prototype.calculatePositionAndTexture = function(dimensions,toolRadius)
 
 CWS.Mill.prototype._create3DWorkpiece = function()
     {
-        this.offset.z += this.workpiece.z/2
+        this.offset.z = this.workpiece.z/2
         const cutout = new Cutout(this);
         cutout.lineDetect(this.motionData);
 

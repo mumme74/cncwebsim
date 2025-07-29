@@ -139,7 +139,7 @@ CWS.Renderer.prototype.lookAtMill = function (dimensions)
         var cameraPosition = new THREE.Vector3(0,0,distance);
         this.camera.position.copy( cameraPosition );
         this.camera.far = 20*Math.max(dimensions.x,dimensions.y);
-        this.camera.near = 0.05*Math.max(dimensions.x,dimensions.y);
+        this.camera.near = 0.001*Math.max(dimensions.x,dimensions.y);
         this.camera.updateProjectionMatrix();
     };
 
