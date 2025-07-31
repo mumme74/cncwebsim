@@ -70,7 +70,7 @@ CWS.SHADER["vs-lathe-1-3D"] =
     "    // Z = horizontal\n"+
     "    float x=position.x/workpieceRadius*2.0-1.0;\n"+
     "    float z=position.z/workpieceLength*2.0-1.0;\n"+
-    "    gl_Position = vec4(z,1.0,x, 1.0 );\n"+
+    "    gl_Position = vec4(z, 1.0, x, 1.0 );\n"+
     "    zDist = position.x/workpieceRadius*maxValue;\n"+
     "}\n";
 
@@ -84,7 +84,7 @@ CWS.SHADER["fs-lathe-1-3D"] =
     "    float v = zDist;\n"+
     "    if (v<0.0)\n"+
     "        v=0.0;\n"+
-    "    vec2 z = to16BitValue(zDist);\n"+
+    "    vec2 z = to16BitValue(v);\n"+
     "    gl_FragColor = vec4(z.x,z.y,0.0,1.0);\n"+
     "}\n";
 

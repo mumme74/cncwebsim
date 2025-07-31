@@ -44,6 +44,18 @@ CWS.Lathe.prototype.initWebGL = function ()
             throw 'Error creating WebGL context.';
         this.gl.enable(this.gl.DEPTH_TEST);
 
+        // // debug, comment out in prod.
+        // const div = document.createElement('div');
+        // div.appendChild(this.canvas);
+        // document.body.appendChild(div);
+        // div.style.height=40;
+        // div.style.position='absolute';
+        // div.style.top='50px';
+        // div.style.width='512px';
+        // div.style.zIndex = 100;
+        // this.canvas.style.height = '20px';
+        // this.canvas.style.width = '512px'
+
         // boilerplate for later calling the shader program
         // aka delegate computation to that.
         // vs-lathe-1-3D vertex-shader sets distance in Z
@@ -283,13 +295,14 @@ CWS.Lathe.prototype._webGlCalculation = function()
         const shader = this.shaderProgram1,
               radius = this.workpiece.x/2.0;
 
+        this.gl.flush();
         this.gl.useProgram(shader);
 
         // Delete the last buffer
         if (this.linesVertexPositionBuffer !== undefined)
             try
             {
-                gl.deleteBuffer(this.linesVertexPositionBuffer);
+                this.gl.deleteBuffer(this.linesVertexPositionBuffer);
             }catch(e){}
 
 
@@ -317,7 +330,7 @@ CWS.Lathe.prototype._webGlCalculation = function()
         // Draw everything as points to make sure vertical lines will also be rendered
         this.gl.drawArrays(this.gl.POINTS, 0,
             this.linesVertexPositionBuffer.numItems);
-        this.gl.flush();
+
 
         // Read the rendered data and calculate the values
         this.gl.readPixels(0, 0, this.renderResolution, 1,
@@ -361,30 +374,31 @@ CWS.Lathe.prototype._create3DWorkpiece = function ()
 
         // Tool radius
         // comment out for now, should be done in shaders, in my opinion
-        // this.dataLevel2 = new Float32Array(this.renderResolution);
+        this.dataLevel2 = new Float32Array(this.renderResolution);
 
-        // var toolRadius = this.machine.tool.radius || 2; // mm
-        // var seg = this.workpiece.z/(this.renderResolution-1);
-        // var segNbr = Math.round(toolRadius/seg); // number of segments
-        // if (segNbr > 1)
-        // {
-        //     // Do the cuts
-        //     for (i = 4, end = len/4; i < end; i++)
-        //     {
-        //         // find the one with least distance
-        //         this.dataLevel2[i]=Math.min.apply(Math,
-        //                 this.dataLevel1.subarray(i, i+segNbr));
-        //     };
-        //     // anything not touched by tool
-        //     // for (i = 1; i < segNbr; i++)
-        //     // {
-        //     //     // use distance from top, ie: from workpiece creation
-        //     //     for (j=0; j<segNbr; j++)
-        //     //         this.dataLevel2[i] = Math.min.apply(Math,
-        //     //             this.dataLevel1.subarray(0, i));
-        //     // };
-        //     //this.dataLevel1 = this.dataLevel2;
-        // }
+        var toolRadius = this.machine.tool.radius || 2; // mm
+        var seg = this.workpiece.z/(this.renderResolution-1);
+        var segNbr = Math.round(toolRadius/seg); // number of segments
+        var halfSegNbr = Math.floor(segNbr / 2);
+        if (segNbr > 1)
+        {
+            // Do the cuts
+            for (i = halfSegNbr, end = len/4; i < end; i++)
+            {
+                // find the one with least distance
+                this.dataLevel2[i]=Math.min.apply(Math,
+                        this.dataLevel1.subarray(i-halfSegNbr, i+halfSegNbr-1));
+            };
+            // anything not touched by tool
+            for (i = 1; i < segNbr; i++)
+            {
+                // use distance from top, ie: from workpiece creation
+                for (j=0; j<segNbr; j++)
+                    this.dataLevel2[i] = Math.min.apply(Math,
+                        this.dataLevel1.subarray(0, i));
+            };
+            this.dataLevel1 = this.dataLevel2;
+        }
 
         this.generateLatheGeometry();
         //this.mesh3D.position.x = -this.workpiece.x/2;
