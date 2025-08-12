@@ -336,7 +336,7 @@ CWS.Controller.prototype.exportToOBJ = function()
 
 CWS.Controller.prototype.exportGCode = function()
     {
-        const code = this.editor.getCode();
+        const code = this.editor.getCode().replace(/([^\r])\n/ig, '$1\r\n');
         const name = this.storage.currentProjectName();
         this._createDownload(code, `${name}.gcode`);
     }
@@ -360,7 +360,7 @@ CWS.Controller.prototype.importFile = function(path, content)
         } else {
             const machineType = this.machine.mtype;
             this.createProject({projectName:"Untitled", machineType});
-            this.editor.setCode(content);
+            this.editor.setCode(content.replace(/\r\n/ig,'\n'));
         }
     }
 
