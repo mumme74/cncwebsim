@@ -499,7 +499,7 @@ CWS.DialogBox.prototype.workpieceDimensions = function (controller)
             {
                 "Save": () => {
                     var values = {};
-                    var result = $(this.firstChild).serializeArray();
+                    var result = $(this.dialog[0].firstChild).serializeArray();
                     for (var i = 0; i < result.length; i++)
                     {
                         values[result[i].name]=parseFloat(result[i].value);

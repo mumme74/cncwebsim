@@ -420,7 +420,7 @@ CWS.Mill.prototype._create3DWorkpiece = function ()
             {
                 var arrayPos1 = (yi*this.renderResolution+xi)*4;
                 var arrayPos2 = ((yi-minY+1)*rowSize+xi-minX+1)*3;
-                if (dataview2.getUint8(arrayPos1+3)!==0)
+                if (arrayPos1 < dataview2.length && dataview2.getUint8(arrayPos1+3)!==0)
                 {
                     var x = dataview1.getUint16(arrayPos1)*xDist;
                     var y = dataview1.getUint16(arrayPos1+2)*yDist;
