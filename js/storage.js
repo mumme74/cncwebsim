@@ -8,7 +8,7 @@
 CWS.Storage = function (options)
     {
         options = options || {};
-        this.useCompression = (options.useCompression===undefined)?true:options.useCompression;
+        this.useCompression = (options.useCompression!==undefined)?true:options.useCompression;
         this.useLocalStorage = (options.useLocalStorage===undefined)?true:options.useLocalStorage;
         // storage can be localStorage or a dictionary
         this.storage = {};
